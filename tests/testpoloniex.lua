@@ -1,6 +1,7 @@
 require 'luarocks_path'
 require 'pl.app'.require_here ".."
 local api = require 'exchange.poloniex'
+local utest = require 'unittest'
 local dump = require 'pl.pretty'.dump
 
 
@@ -59,24 +60,4 @@ local tests =
   end
 }
 
-function run_single (testname, test)
-  io.write ("Running " .. testname .. "... ")
-  local noerr, errmsg = pcall (test)
-  if noerr then
-    print "ok"
-  else
-    print ("fail!\n", errmsg)
-  end
-  return noerr
-end
-
-function run_tests (tests)
-  local testcount, testfail = 0, 0
-  for testname, test in pairs(tests) do
-    if not run_single (testname, test) then testfail = testfail + 1 end
-    testcount = testcount + 1
-  end
-  print ("  --> " .. testfail .. " out of " .. testcount .. " test(s) failed.")
-end
-
-run_tests (tests)
+utest.run (tests)

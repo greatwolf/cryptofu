@@ -1,6 +1,7 @@
 require 'luarocks_path'
 require 'pl.app'.require_here ".."
 local api = require 'exchange.mintpal'
+local utest = require 'unittest'
 local d = require 'pl.pretty'.dump
 dump = function (t) return d (t) end
 
@@ -86,9 +87,9 @@ function run_tests (tests)
   print ("  --> " .. testfail .. " out of " .. testcount .. " test(s) failed.")
 end
 
-run_tests (tests)
--- run_single ("test_balance", tests.test_balance)
--- run_single ("test_buy", tests.test_buy)
--- run_single ("test_sell", tests.test_sell)
--- run_single ("test_openorders", tests.test_openorders)
--- run_single ("test_cancelorder", tests.test_cancelorder)
+utest.run (tests)
+-- run_single (tests, "test_balance")
+-- run_single (tests, "test_buy")
+-- run_single (tests, "test_sell")
+-- run_single (tests, "test_openorders")
+-- run_single (tests, "test_cancelorder")
