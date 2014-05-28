@@ -51,7 +51,9 @@ final output:
   local ask_index, bid_index = 1, 1
   local last_askprice, last_bidprice
   local totalamount = 0
-  while sells[ask_index] < buys[bid_index] do
+  while sells[ask_index] and 
+        buys[bid_index] and 
+        sells[ask_index] < buys[bid_index] do
     last_askprice, last_bidprice = sells[ask_index], buys[bid_index]
     if ask_amounts[ask_index] < bid_amounts[bid_index] then
       totalamount = totalamount + ask_amounts[ask_index]

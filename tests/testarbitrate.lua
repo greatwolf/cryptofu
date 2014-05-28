@@ -43,7 +43,7 @@ local orderbook2 =
     },
     amount = 
     {
-      39.63971162,
+      39.63971,
       66.04248947,
       8.32493600,
       3.94617200,
@@ -58,6 +58,7 @@ local tests =
 {
   test_arbitrate = function ()
     local r = arbitrate (orderbook1, orderbook2)
+    assert (r)
     assert (r[1].order_type == "sell")
     assert (r[1].rate == 0.02020000)
     assert (r[2].order_type == "buy")
@@ -67,6 +68,7 @@ local tests =
 
   test_reverse_arbitrate = function ()
     local r = arbitrate (orderbook2, orderbook1)
+    assert (r)
     assert (r[2].order_type == "sell")
     assert (r[2].rate == 0.02020000)
     assert (r[1].order_type == "buy")
@@ -74,7 +76,7 @@ local tests =
     assert (r.amount == 26.00904372)
   end,
 
-  test_empty_arbitrate = function ()
+  test_emptybook_arbitrate = function ()
     local r = arbitrate ({buy = {price ={}, amount = {}}, sell = {price ={}, amount = {}}},
                          {buy = {price ={}, amount = {}}, sell = {price ={}, amount = {}}})
     assert (not r)
@@ -118,6 +120,34 @@ local tests =
     local r = arbitrate (orderbook1, orderbook2)
     assert (not r)
   end,
+
+  test_thinbuy_arbitrate = function ()
+    local orderbook1 =
+    {
+      buy =
+      {
+        price  = {   8, 7.11, },
+        amount = { 0.5, 1.23, }
+      },
+      sell = { price = {}, amount = {} }
+    }
+    local orderbook2 =
+    {
+      buy = { price = {}, amount = {} },
+      sell =
+      {
+        price  = {    2, 3, 3.6, 4.8, },
+        amount = { 0.23, 4, 1.2, 0.6, }
+      }
+    }
+    local r = arbitrate (orderbook1, orderbook2)
+    assert (r)
+    assert (r.amount == 1.73)
+    assert (r[1].order_type == "sell")
+    assert (r[1].rate == 7.11)
+    assert (r[2].order_type == "buy")
+    assert (r[2].rate == 3)
+  end
 }
 
 utest.run (tests)
