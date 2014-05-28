@@ -49,7 +49,7 @@ local retry = create_retry
 {
   "timeout",
   "response not from MintPal!", 
-  attempts = 15
+  attempts = 20
 }
 mp_query = function (method, headers, url, path, data)
   local resp = {}
@@ -108,6 +108,9 @@ function mintpal_api:tradehistory (market1, market2)
   resp = resp:match "<h2>Your Recent Trades</h2>.+<tbody>(.+)</tbody>"
   local trade_pat = [[<tr><td>([%d :-]+)</td><td>([BS][UE][YL]L?)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td></tr>]]
   local trades = {}
+  -- if no past trade history for this market pair
+  -- return empty table
+  if not resp then return trades end
   for date, type, rate, amount, _, _, total in resp:gmatch (trade_pat) do
     table.insert (trades, {date = date, type = type, rate = rate, amount = amount, total = total})
   end
