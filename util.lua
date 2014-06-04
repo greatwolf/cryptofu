@@ -1,3 +1,5 @@
+local stringx = require 'pl.stringx'
+
 --[[
   Various utility functions
 --]]
@@ -16,6 +18,7 @@ local create_logfunc = function (l, logname)
   end
   
   local camel = lower:sub(1, 1):upper() .. lower:sub(2)
+  camel = stringx.endswith (camel, "_if") and camel:sub (1, -4) or camel
   local logfunc = function (cond, ...)
     local log_writer = l.writer
     if cond then
@@ -38,7 +41,9 @@ local find = function (t, msg)
 end
 
 -- Retries a function/action if it fails for given reason,
--- up to max_retires
+-- up to max_retries. 'context' holds a list of errors to match against.
+-- If the error thrown is one of the error strings in context, the retry is
+-- attempted.
 local max_retries = 1
 local create_retry = function (context)
   assert (type(context) == "table")
@@ -53,12 +58,12 @@ local create_retry = function (context)
       res = {pcall (action, ...)}
       attempts = attempts + 1
       if res[1] then
-        log.noteif (attempts > 1, "retry succeeds after " .. attempts ..  " attempt(s).")
+        log.note_if (attempts > 1, "retry succeeds after " .. attempts ..  " attempt(s).")
         return select (2, unpack (res)) 
       end
       if not find (context, res[2]) then break end
     end
-    log.warnif (attempts > 1, "retry fails after " .. attempts ..  " attempt(s).")
+    log.warn_if (attempts > 1, "retry fails after " .. attempts ..  " attempt(s).")
     error (res[2])
   end
 end
