@@ -1,8 +1,9 @@
 local https = require 'ssl.https'
 local json = require 'dkjson'
+local foreachi = require 'pl.tablex'.foreachi
 local util = require 'util'
 
-local urlencode_parm, create_retry, log = util.urlencode_parm, util.create_retry, util.log
+local urlencode_parm, log = util.urlencode_parm, util.log
 local url, apiurl = "https://www.mintpal.com", "https://api.mintpal.com"
 local tradefee = 0.15 / 100
 
@@ -45,15 +46,8 @@ do
 end
 
 -- internal query function definitions
-local retry = create_retry
-{
-  "timeout",
-  "response not from MintPal!", 
-  attempts = 20
-}
 mp_query = function (method, headers, url, path, data)
   local resp = {}
-  local elapse = os.clock()
   local r, c, h = https.request
     {
       method = method,
@@ -62,7 +56,6 @@ mp_query = function (method, headers, url, path, data)
       source = data and ltn12.source.string (data),
       sink = ltn12.sink.table (resp),
     }
-  print ((os.clock() - elapse) .. "s")
   assert(r, c)
   return table.concat(resp)
 end
@@ -81,11 +74,8 @@ mp_webquery = function (sessionheaders, method, path, data, extraheaders)
   end
 
   post_headers["content-length"] = data and #data
-  local r
-  retry (function ()
-    r = mp_query (method, post_headers, url, path, data)
-    mp_validresponse (r)
-  end)
+  local r = mp_query (method, post_headers, url, path, data)
+  mp_validresponse (r)
 
   return r
 end
@@ -129,7 +119,8 @@ function mintpal_api:buy (market1, market2, rate, quantity)
   }
   local r = self:mp_webquery ("POST", "/action/addOrder", 
                               urlencode_parm (data), {["X-Requested-With"] = "XMLHttpRequest"})
-  return json.decode (r)
+  r = json.decode (r)
+  return assert (r.response == "success", r.reason) and r
 end
 
 function mintpal_api:sell (market1, market2, rate, quantity)
@@ -144,7 +135,8 @@ function mintpal_api:sell (market1, market2, rate, quantity)
   }
   local r = self:mp_webquery ("POST", "/action/addOrder", 
                               urlencode_parm (data), {["X-Requested-With"] = "XMLHttpRequest"})
-  return json.decode (r)
+  r = json.decode (r)
+  return assert (r.response == "success", r.reason) and r
 end
 
 function mintpal_api:cancelorder (market1, market2, ordernumber)
@@ -155,7 +147,8 @@ function mintpal_api:cancelorder (market1, market2, ordernumber)
   }
   local r = self:mp_webquery ("POST", "/action/cancelOrder", 
                               urlencode_parm (data), {["X-Requested-With"] = "XMLHttpRequest"})
-  return json.decode (r)
+  r = json.decode (r)
+  return assert (r.response == "success", r.reason) and r
 end
 
 function mintpal_api:markethistory (market1, market2)
@@ -165,16 +158,27 @@ end
 function mintpal_api:orderbook (market1, market2)
   local orderbook = 
   {
-    buy = mp_apiv2query ("GET", string.format ("/market/orders/%s/%s/BUY", market2, market1)),
-    sell = mp_apiv2query ("GET", string.format ("/market/orders/%s/%s/SELL", market2, market1))
+    buy = { price = {}, amount = {} }, sell = { price = {}, amount = {} }
   }
+  local bids = mp_apiv2query ("GET", string.format ("/market/orders/%s/%s/BUY", market2, market1))
+  local asks = mp_apiv2query ("GET", string.format ("/market/orders/%s/%s/SELL", market2, market1))
+  assert (bids.status ~= "error", bids.message)
+  assert (asks.status ~= "error", asks.message)
+  
+  local function accum (order, _, orderbook)
+    table.insert (orderbook.price, tonumber (order.price))
+    table.insert (orderbook.amount, tonumber (order.amount))
+  end
+  foreachi (bids.data, accum, orderbook.buy)
+  foreachi (asks.data, accum, orderbook.sell)
   return orderbook
 end
 
 function mintpal_api:openorders (market1, market2)
   local r = self:mp_webquery ("GET", "/action/getUserOrders/" .. mp_getmarketid (market1, market2), 
                               nil, {["X-Requested-With"] = "XMLHttpRequest"})
-  return json.decode (r)
+  r = json.decode (r)
+  return assert (r.response == "success", r.reason) and r
 end
 
 local find_incapcookies = function (t)
