@@ -8,7 +8,7 @@ local keys = require 'tests.api_testkeys'.poloniex
 local session = require 'exchange.poloniex' { key = keys.key, secret = keys.secret }
 assert (session)
 
-local create_retry = require 'util'.create_retry
+local create_retry = require 'tools.util'.create_retry
 local retry = create_retry
 {
   "closed",

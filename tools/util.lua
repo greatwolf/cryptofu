@@ -1,37 +1,7 @@
-local stringx = require 'pl.stringx'
-
+local log = require 'tools.logger'
 --[[
   Various utility functions
 --]]
-
--- Logging and debugging
--- Auto creates the name of the log
--- Specify where the log outputs by overriding log.writer; io.stderr is default
--- Usage: log.logname (condition, msg1, msg2, ...)
---  eg. log.warnif (2 > 1, "two is greater than one")
-local create_logfunc = function (l, logname)
-  local lower = logname:lower()
-  -- check and default the writer
-  if lower == "writer" then
-    l.writer = io.stderr
-    return rawget (l, "writer")
-  end
-  
-  local camel = lower:sub(1, 1):upper() .. lower:sub(2)
-  camel = stringx.endswith (camel, "_if") and camel:sub (1, -4) or camel
-  local logfunc = function (cond, ...)
-    local log_writer = l.writer
-    if cond then
-      log_writer:write ("  " .. camel .. ": ", ...)
-      log_writer:write "\n"
-    end
-  end
-  l[lower] = rawget(l, lower) or logfunc
-  l[logname] = l[lower]
-  return rawget(l, logname)
-end
-
-local log = setmetatable ({}, {__index = create_logfunc})
 
 local find = function (t, msg)
   for _, m in ipairs(t) do
@@ -51,6 +21,7 @@ local create_retry = function (context)
   for i, msg in ipairs (context) do
     context[i] = ": " .. msg
   end
+  local lognote, logwarn = log "Note", log "Warning"
   return function (action, ...)
     local attempts = 0
     local res
@@ -58,12 +29,12 @@ local create_retry = function (context)
       res = {pcall (action, ...)}
       attempts = attempts + 1
       if res[1] then
-        log.note_if (attempts > 1, "retry succeeds after " .. attempts ..  " attempt(s).")
+        lognote._if (attempts > 1, "retry succeeds after " .. attempts ..  " attempt(s).")
         return select (2, unpack (res)) 
       end
       if not find (context, res[2]) then break end
     end
-    log.warn_if (attempts > 1, "retry fails after " .. attempts ..  " attempt(s).")
+    logwarn._if (attempts > 1, "retry fails after " .. attempts ..  " attempt(s).")
     error (res[2])
   end
 end
@@ -81,7 +52,6 @@ end
 
 local _M = 
 {
-  log = log,
   urlencode_parm = urlencode_parm,
   create_retry = create_retry,
 }

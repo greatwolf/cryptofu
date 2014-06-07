@@ -9,7 +9,7 @@ local mintpal_cookies = require 'tests.api_testkeys'.mintpal
 local session = require 'exchange.mintpal' (mintpal_cookies)
 assert (session)
 
-local create_retry = require 'util'.create_retry
+local create_retry = require 'tools.util'.create_retry
 local retry = create_retry
 {
   "timeout",

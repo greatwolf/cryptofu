@@ -2,7 +2,7 @@ local https = require 'ssl.https'
 local crypto = require 'crypto'
 local json = require 'dkjson'
 local tablex = require 'pl.tablex'
-local util = require 'util'
+local util = require 'tools.util'
 local zip = require 'pl.tablex'.zip
 
 local urlencode_parm, log = util.urlencode_parm, util.log

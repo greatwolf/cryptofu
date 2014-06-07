@@ -1,7 +1,7 @@
 local https = require 'ssl.https'
 local json = require 'dkjson'
 local foreachi = require 'pl.tablex'.foreachi
-local util = require 'util'
+local util = require 'tools.util'
 
 local urlencode_parm, log = util.urlencode_parm, util.log
 local url, apiurl = "https://www.mintpal.com", "https://api.mintpal.com"
