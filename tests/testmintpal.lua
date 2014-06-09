@@ -9,75 +9,68 @@ local mintpal_cookies = require 'tests.api_testkeys'.mintpal
 local session = require 'exchange.mintpal' (mintpal_cookies)
 assert (session)
 
-local create_retry = require 'tools.util'.create_retry
-local retry = create_retry
-{
-  "timeout",
-  "response not from MintPal!", 
-  attempts = 20
-}
+local make_retry = require 'tools.retry'
+local session = make_retry (session, 20, "timeout", "response not from MintPal!")
 
 local tests = 
 {
   test_balance = function ()
-    local r = retry (session.balance, session)
+    local r = session:balance ()
 
     dump (r)
   end,
 
   test_tradehistory = function ()
-    local r = retry (session.tradehistory, session, "BTC", "LTC")
+    local r = session:tradehistory ("BTC", "LTC")
 
     dump (r)
   end,
 
   test_buy = function ()
-    local r = retry (session.buy, session, "BTC", "LTC", 0.00015, 1.001)
+    local r = session:buy ("BTC", "LTC", 0.00015, 1.001)
 
     dump (r)
   end,
 
   test_sell = function ()
-    local r = retry (session.sell, session, "BTC", "AC", 0.015, 1)
+    local r = session:sell ("BTC", "AC", 0.015, 1)
 
     dump (r)
   end,
 
   test_cancelorder = function ()
-    local orders = retry (session.openorders, session, "BTC", "LTC")
+    local orders = session:openorders ("BTC", "LTC")
     for _, each in ipairs (orders.data) do
       dump (session:cancelorder("BTC", "LTC", each.order_id))
     end
     
-    orders = retry (session.openorders, session, "BTC", "AC")
+    orders = session:openorders ("BTC", "AC")
     for _, each in ipairs (orders.data) do
       dump (session:cancelorder("BTC", "AC", each.order_id))
     end
   end,
 
   test_markethistory = function ()
-    local r = retry (session.markethistory, session, "BTC", "LTC")
+    local r = session:markethistory ("BTC", "LTC")
 
     assert (next(r))
   end,
 
   test_orderbook = function ()
-    local r = retry (session.orderbook, session, "BTC", "LTC")
+    local r = session:orderbook ("BTC", "LTC")
 
     dump (r)
     assert (next(r))
   end,
   
   test_openorders = function ()
-    retry (function()
-      dump (session:openorders("BTC", "LTC"))
-      dump (session:openorders("BTC", "AC"))
-      dump (session:openorders("BTC", "BC"))
-    end)
+    dump (session:openorders("BTC", "LTC"))
+    dump (session:openorders("BTC", "AC"))
+    dump (session:openorders("BTC", "BC"))
   end,
 
   test_mixcasequery = function ()
-    local r = retry (session.orderbook, session, "BtC", "caiX")
+    local r = session:orderbook ("BtC", "caiX")
 
     dump (r)
     assert (next(r))

@@ -8,30 +8,25 @@ local keys = require 'tests.api_testkeys'.poloniex
 local session = require 'exchange.poloniex' { key = keys.key, secret = keys.secret }
 assert (session)
 
-local create_retry = require 'tools.util'.create_retry
-local retry = create_retry
-{
-  "closed",
-  "timeout",
-  attempts = 3
-}
+local make_retry = require 'tools.retry'
+local session = make_retry (session, 3, "closed", "timeout")
 
 local tests = 
 {
   test_balance = function ()
-    local r = retry (session.balance, session)
+    local r = session:balance ()
 
     dump (r)
   end,
 
   test_tradehistory = function ()
-    local r = retry (session.tradehistory, session, "BTC", "LTC")
+    local r = session:tradehistory ("BTC", "LTC")
 
     dump (r)
   end,
 
   test_buy = function ()
-    local r = retry (session.buy, session, "BTC", "LTC", 0.00015, 1)
+    local r = session:buy ("BTC", "LTC", 0.00015, 1)
 
     dump (r)
   end,
@@ -43,33 +38,33 @@ local tests =
   end,
 
   test_cancelorder = function ()
-    local orders = retry (session.openorders, session, "BTC", "LTC")
+    local orders = session:openorders ("BTC", "LTC")
     for _, order in ipairs (orders) do
-      local r = retry (session.cancelorder, session, "BTC", "LTC", order.orderNumber)
+      local r = session:cancelorder ("BTC", "LTC", order.orderNumber)
       dump (r)
     end
   end,
 
   test_markethistory = function ()
-    local r = retry (session.markethistory, session, "BTC", "LTC")
+    local r = session:markethistory ("BTC", "LTC")
 
     assert (r)
   end,
 
   test_orderbook = function ()
-    local r = retry (session.orderbook, session, "BTC", "LTC")
+    local r = session:orderbook ("BTC", "LTC")
 
     dump (r)
   end,
   
   test_openorders = function ()
-    local r = retry (session.openorders, session, "BTC", "LTC")
+    local r = session:openorders ("BTC", "LTC")
 
     dump (r)
   end,
 
   test_mixcasequery = function ()
-    local r = retry (session.orderbook, session, "BtC", "xmR")
+    local r = session:orderbook ("BtC", "xmR")
 
     dump (r)
     assert (r.buy and r.sell)
