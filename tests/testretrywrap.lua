@@ -47,6 +47,19 @@ local tests =
     t_wrapped.func ()
     assert (r == 3)
   end,
+
+  test_retrynestedexhaust = function ()
+    local r = 0
+    local t = 
+    { 
+      func1 = function (self) self.func2() end,
+      func2 = function () r = r + 1; error "some error" end
+    }
+    local t_wrapped = make_retry (t, 3, "some error")
+    local noerr, errmsg = pcall (t_wrapped.func1, t_wrapped)
+    assert (not noerr)
+    assert (r == 3, r)
+  end,
 }
 
 utest.run (tests)
