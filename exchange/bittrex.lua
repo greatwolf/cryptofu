@@ -1,8 +1,9 @@
-local https = require 'ssl.https'
+local https  = require 'ssl.https'
 local crypto = require 'crypto'
-local json = require 'dkjson'
+local json   = require 'dkjson'
 local tablex = require 'pl.tablex'
 local urlencode_parm = require 'tools.util'.urlencode_parm
+local map_transpose  = require 'tools.util'.map_transpose
 local dump = require 'pl.pretty'.dump
 
 local url = "https://bittrex.com"
@@ -88,17 +89,8 @@ function bittrex_api:orderbook (market1, market2)
                               ["type"] = "both"})
   r = assert (r.success, r.message) and r.result
 
-  local maptranspose = function (t)
-    t.price, t.amount = {}, {}
-    for i, v in ipairs (t) do
-      table.insert (t.price, v.Rate)
-      table.insert (t.amount, v.Quantity)
-      t[i] = nil
-    end
-    return t
-  end
-  maptranspose (r.buy)
-  maptranspose (r.sell)
+  r.buy  = map_transpose (r.buy, { Rate = "price", Quantity = "amount" })
+  r.sell = map_transpose (r.sell, { Rate = "price", Quantity = "amount" })
 
   return r
 end

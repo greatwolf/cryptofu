@@ -1,7 +1,8 @@
 local https = require 'ssl.https'
 local json = require 'dkjson'
-local foreachi = require 'pl.tablex'.foreachi
+local imap = require 'pl.tablex'.imap
 local util = require 'tools.util'
+local map_transpose = require 'tools.util'.map_transpose
 
 local urlencode_parm, log = util.urlencode_parm, util.log
 local url, apiurl = "https://www.mintpal.com", "https://api.mintpal.com"
@@ -156,21 +157,19 @@ function mintpal_api:markethistory (market1, market2)
 end
 
 function mintpal_api:orderbook (market1, market2)
-  local orderbook = 
-  {
-    buy = { price = {}, amount = {} }, sell = { price = {}, amount = {} }
-  }
+  local orderbook = {}
   local bids = mp_apiv2query ("GET", string.format ("/market/orders/%s/%s/BUY", market2, market1))
   local asks = mp_apiv2query ("GET", string.format ("/market/orders/%s/%s/SELL", market2, market1))
-  assert (bids.status ~= "error", bids.message)
-  assert (asks.status ~= "error", asks.message)
-  
-  local function accum (order, _, orderbook)
-    table.insert (orderbook.price, tonumber (order.price))
-    table.insert (orderbook.amount, tonumber (order.amount))
-  end
-  foreachi (bids.data, accum, orderbook.buy)
-  foreachi (asks.data, accum, orderbook.sell)
+  if bids.status ~= "success" then return nil, bids.message end
+  if asks.status ~= "success" then return nil, asks.message end
+
+  orderbook.buy  = map_transpose (bids.data)
+  orderbook.sell = map_transpose (asks.data)
+  orderbook.buy.price   = imap (tonumber, orderbook.buy.price)
+  orderbook.buy.amount  = imap (tonumber, orderbook.buy.amount)
+  orderbook.sell.price  = imap (tonumber, orderbook.sell.price)
+  orderbook.sell.amount = imap (tonumber, orderbook.sell.amount)
+  orderbook.buy.total, orderbook.sell.total = nil
   return orderbook
 end
 
