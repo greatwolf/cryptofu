@@ -87,7 +87,7 @@ function mintpal_api:balance ()
   local resp = self:mp_webquery ("GET", "/balances")
 
   local balances = {}
-  for code, balance in resp:gmatch "<td>([%u%d]+)</td><td><strong>(%d+[.%d]*)</strong></td>" do
+  for code, balance in resp:gmatch "<td>([%u%d]+)</td><td>[%w ]+</td><td><strong>(%d+[.%d]*)</strong></td>" do
     balances[code] = tonumber (balance)
   end
   balances.BTC = balances.BTC or 0
