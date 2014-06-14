@@ -59,21 +59,33 @@ local tests =
   test_arbitrate = function ()
     local r = arbitrate (orderbook1, orderbook2)
     assert (r)
-    assert (r[1].order_type == "sell")
-    assert (r[1].rate == 0.02020000)
-    assert (r[2].order_type == "buy")
-    assert (r[2].rate == 0.02014990)
-    assert (r.amount == 26.00904372)
+    assert (r.buy  == orderbook2)
+    assert (r.sell == orderbook1)
+    assert (r[1].buyprice  == orderbook2.sell.price[1])
+    assert (r[1].sellprice == orderbook1.buy.price[1])
+    assert (r[1].amount == orderbook1.buy.amount[1])
+    assert (r[2].buyprice  == orderbook2.sell.price[1])
+    assert (r[2].sellprice == orderbook1.buy.price[2])
+    assert (r[2].amount == orderbook1.buy.amount[2])
+    assert (r[3].buyprice  == orderbook2.sell.price[1])
+    assert (r[3].sellprice == orderbook1.buy.price[3])
+    assert (r[3].amount == orderbook1.buy.amount[3])
   end,
 
   test_reverse_arbitrate = function ()
     local r = arbitrate (orderbook2, orderbook1)
     assert (r)
-    assert (r[2].order_type == "sell")
-    assert (r[2].rate == 0.02020000)
-    assert (r[1].order_type == "buy")
-    assert (r[1].rate == 0.02014990)
-    assert (r.amount == 26.00904372)
+    assert (r.buy  == orderbook2)
+    assert (r.sell == orderbook1)
+    assert (r[1].buyprice  == orderbook2.sell.price[1])
+    assert (r[1].sellprice == orderbook1.buy.price[1])
+    assert (r[1].amount == orderbook1.buy.amount[1])
+    assert (r[2].buyprice  == orderbook2.sell.price[1])
+    assert (r[2].sellprice == orderbook1.buy.price[2])
+    assert (r[2].amount == orderbook1.buy.amount[2])
+    assert (r[3].buyprice  == orderbook2.sell.price[1])
+    assert (r[3].sellprice == orderbook1.buy.price[3])
+    assert (r[3].amount == orderbook1.buy.amount[3])
   end,
 
   test_emptybook_arbitrate = function ()
@@ -121,6 +133,65 @@ local tests =
     assert (not r)
   end,
 
+  test_equalqty_arbitrate = function ()
+    local orderbook1 = 
+    {
+      buy =
+      {
+        price =
+        {
+          9,
+          8,
+          7,
+          6,
+          5,
+        },
+        amount = 
+        {
+          5,
+          5,
+          6.5,
+          20,
+          5,
+        }
+      },
+      sell = { price = {10}, amount = {1} }
+    }
+    local orderbook2 =
+    {
+      sell =
+      {
+        price =
+        {
+          4,
+          5,
+          6,
+          7,
+        },
+        amount = 
+        {
+          10,
+          5,
+          2,
+          3,
+        }
+      },
+      buy = { price = {2}, amount = {1} }
+    }
+    local r = arbitrate (orderbook1, orderbook2)
+    assert (r)
+    assert (r.buy == orderbook2 and r.sell == orderbook1)
+    assert (r[1].buyprice == orderbook2.sell.price[1] and 
+            r[1].sellprice == orderbook1.buy.price[1] and 
+            r[1].amount == 5)
+    assert (r[2].buyprice == orderbook2.sell.price[1] and 
+            r[2].sellprice == orderbook1.buy.price[2] and 
+            r[2].amount == 5)
+    assert (r[3].buyprice == orderbook2.sell.price[2] and 
+            r[3].sellprice == orderbook1.buy.price[3] and 
+            r[3].amount == 5)
+  end,
+
   test_thinbuy_arbitrate = function ()
     local orderbook1 =
     {
@@ -142,11 +213,17 @@ local tests =
     }
     local r = arbitrate (orderbook1, orderbook2)
     assert (r)
-    assert (r.amount == 1.73)
-    assert (r[1].order_type == "sell")
-    assert (r[1].rate == 7.11)
-    assert (r[2].order_type == "buy")
-    assert (r[2].rate == 3)
+    assert (r.buy == orderbook2 and r.sell == orderbook1)
+    assert (r[1].buyprice == 2 and 
+            r[1].sellprice == 8 and
+            r[1].amount == 0.23)
+    assert (r[2].buyprice == 3 and
+            r[2].sellprice == 8 and
+            r[2].amount == 0.27)
+    assert (r[3].buyprice == 3 and
+            r[3].sellprice == 7.11 and
+            r[3].amount == 1.23)
+    assert (not r[4])
   end
 }
 

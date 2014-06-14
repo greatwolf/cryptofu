@@ -49,28 +49,18 @@ final output:
 
   local sells, buys = orderbook2.sell.price, orderbook1.buy.price
   local ask_index, bid_index = 1, 1
-  local last_askprice, last_bidprice
-  local totalamount = 0
+  local r = { buy  = orderbook2, sell = orderbook1, }
   while sells[ask_index] and 
         buys[bid_index] and 
         sells[ask_index] < buys[bid_index] do
-    last_askprice, last_bidprice = sells[ask_index], buys[bid_index]
-    if ask_amounts[ask_index] < bid_amounts[bid_index] then
-      totalamount = totalamount + ask_amounts[ask_index]
-      bid_amounts[bid_index] = bid_amounts[bid_index] - ask_amounts[ask_index]
-      ask_index = ask_index + 1
-    else
-      totalamount = totalamount + bid_amounts[bid_index]
-      ask_amounts[ask_index] = ask_amounts[ask_index] - bid_amounts[bid_index]
-      bid_index = bid_index + 1
-    end
+    table.insert (r, { buyprice = sells[ask_index], sellprice = buys[bid_index] })
+    r[#r].amount = math.min (ask_amounts[ask_index], bid_amounts[bid_index])
+    ask_amounts[ask_index] = ask_amounts[ask_index] - r[#r].amount
+    bid_amounts[bid_index] = bid_amounts[bid_index] - r[#r].amount
+    if bid_amounts[bid_index] == 0 then bid_index = bid_index + 1 end
+    if ask_amounts[ask_index] == 0 then ask_index = ask_index + 1 end
   end
-  return totalamount > 0 and
-  {
-    amount = totalamount, 
-    {rate = last_bidprice, order_type = "sell"}, 
-    {rate = last_askprice, order_type = "buy"},
-  }
+  return #r > 0 and r
 end
 
 local function arbitrate (orderbook1, orderbook2)
@@ -83,9 +73,7 @@ local function arbitrate (orderbook1, orderbook2)
   if not isempty (orderbook2.buy.price) and
      not isempty (orderbook1.sell.price) and
      orderbook1.sell.price[1] < orderbook2.buy.price[1] then
-    local r = arbitrate (orderbook2, orderbook1)
-    if r then r[1], r[2] = r[2], r[1] end
-    return r
+    return compute_arb (orderbook2, orderbook1)
   end
   return false
 end
