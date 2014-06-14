@@ -15,39 +15,47 @@ local session = make_retry (session, 20, "timeout", "response not from MintPal!"
 local tests = 
 {
   test_balance = function ()
-    local r = session:balance ()
+    local r = assert (session:balance ())
 
     dump (r)
+    assert (r.AC > 0)
+  end,
+
+  test_cancelorder = function ()
+    local orders = session:openorders ("BTC", "CinnI")
+    for _, each in ipairs (orders) do
+      dump (assert (session:cancelorder("BTC", "cinni", each.order_id)))
+    end
+    
+    orders = session:openorders ("BTC", "AC")
+    for _, each in ipairs (orders) do
+      dump (assert (session:cancelorder("BTC", "AC", each.order_id)))
+    end
   end,
 
   test_tradehistory = function ()
-    local r = session:tradehistory ("BTC", "LTC")
+    local r = assert (session:tradehistory ("BTC", "LTC"))
 
     dump (r)
+    assert (#r > 0)
+  end,
+
+  test_bogusmarket = function ()
+    local r, errmsg = session:markethistory ("BTC", "MRO")
+
+    assert (not r and errmsg == "The market does not exist.")
   end,
 
   test_buy = function ()
-    local r = session:buy ("BTC", "LTC", 0.00015, 1.001)
+    local r = assert (session:buy ("BTC", "CINNI", 0.000011, 10.001))
 
     dump (r)
   end,
 
   test_sell = function ()
-    local r = session:sell ("BTC", "AC", 0.015, 1)
+    local r = assert (session:sell ("BTC", "AC", 0.015, 1))
 
     dump (r)
-  end,
-
-  test_cancelorder = function ()
-    local orders = session:openorders ("BTC", "LTC")
-    for _, each in ipairs (orders.data) do
-      dump (session:cancelorder("BTC", "LTC", each.order_id))
-    end
-    
-    orders = session:openorders ("BTC", "AC")
-    for _, each in ipairs (orders.data) do
-      dump (session:cancelorder("BTC", "AC", each.order_id))
-    end
   end,
 
   test_markethistory = function ()
@@ -57,25 +65,30 @@ local tests =
   end,
 
   test_orderbook = function ()
-    local r = session:orderbook ("BTC", "LTC")
+    local r = assert (session:orderbook ("BTC", "LTC"))
 
-    dump (r)
-    assert (next(r))
+    assert (r.buy and r.sell)
+    assert (r.sell.amount and r.buy.amount)
+    assert (r.sell.price and r.buy.price)
   end,
   
   test_openorders = function ()
-    dump (session:openorders("BTC", "LTC"))
-    dump (session:openorders("BTC", "AC"))
-    dump (session:openorders("BTC", "BC"))
+    local r = assert (session:openorders ("BTC", "LTC"))
+    dump (r)
+    r = assert (session:openorders ("BTC", "AC"))
+    dump (r)
+    r = assert (session:openorders ("BTC", "BC"))
+    dump (r)
   end,
 
   test_mixcasequery = function ()
-    local r = session:orderbook ("BtC", "caiX")
+    local r = assert (session:orderbook ("BtC", "caiX"))
 
-    dump (r)
-    assert (next(r))
+    assert (r.buy and r.sell)
+    assert (r.sell.amount and r.buy.amount)
+    assert (r.sell.price and r.buy.price)
   end
 }
 
 utest.run (tests)
--- utest.run_single (tests, "test_orderbook")
+-- utest.run_single (tests, "test_balance")

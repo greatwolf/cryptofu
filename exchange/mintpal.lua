@@ -109,11 +109,12 @@ function mintpal_api:tradehistory (market1, market2)
 end
 
 function mintpal_api:buy (market1, market2, rate, quantity)
+  local marketid = mp_getmarketid (market1, market2)
   local data = 
   {
-    csrf_token = self:mp_getcsrf_token (),
+    ["csrf_token_market" .. marketid] = self:mp_getcsrf_token {market1, market2},
     ["type"] = 0,
-    market = mp_getmarketid (market1, market2),
+    market = marketid,
     amount = quantity,
     price = rate,
     buyNetTotal = quantity * rate * (1 + tradefee),
@@ -126,11 +127,12 @@ function mintpal_api:buy (market1, market2, rate, quantity)
 end
 
 function mintpal_api:sell (market1, market2, rate, quantity)
+  local marketid = mp_getmarketid (market1, market2)
   local data = 
   {
-    csrf_token = self:mp_getcsrf_token (),
+    ["csrf_token_market" .. marketid] = self:mp_getcsrf_token {market1, market2},
     ["type"] = 1,
-    market = mp_getmarketid (market1, market2),
+    market = marketid,
     amount = quantity,
     price = rate,
     sellNetTotal = quantity * rate * (1 - tradefee),
@@ -143,9 +145,11 @@ function mintpal_api:sell (market1, market2, rate, quantity)
 end
 
 function mintpal_api:cancelorder (market1, market2, ordernumber)
+  local marketid = mp_getmarketid (market1, market2)
   local data = 
   {
-    csrf_token = self:mp_getcsrf_token (),
+    ["csrf_token_market" .. marketid] = self:mp_getcsrf_token {market1, market2},
+    market = marketid,
     orderId = ordernumber,
   }
   local r = self:mp_webquery ("POST", "/action/cancelOrder", 
@@ -211,14 +215,15 @@ local mintpal_create = function (cookies)
     return mp_webquery (headers, method, path, data, extraheaders)
   end
 
-  local csrf_tokentime, csrf_token = os.clock()
-  function session:mp_getcsrf_token ()
-    if csrf_token and csrf_tokentime + 8 > os.clock() then return csrf_token end
-    print "getting new csrf_token"
-    local r = self:mp_webquery ("GET", "/profile")
-    csrf_token = assert(r:match 'name="csrf_token" value="(%w+)"', "could not get csrf_token!")
-    csrf_tokentime = os.clock()
-    return csrf_token
+  local csrf_tokens = {}
+  function session:mp_getcsrf_token (args)
+    local currencypair = (args[2] .. "/" .. args[1]):upper()
+    if not csrf_tokens[currencypair] or args.forcefetch then
+      local r = self:mp_webquery ("GET", "/market/" .. currencypair)
+      csrf_tokens[currencypair] = assert(r:match "var token = '(%w+)';",
+                                         "could not get csrf_token!")
+    end
+    return csrf_tokens[currencypair]
   end
 
   return setmetatable (session, mintpal_api)
