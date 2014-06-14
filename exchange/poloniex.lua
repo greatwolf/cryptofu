@@ -22,10 +22,8 @@ local pol_query = function (method, urlpath, headers, data)
     }
   assert (r, c)
 
-  resp = table.concat(resp)
-  assert (#resp > 0, "empty response!")
-  resp = json.decode (resp)
-  return assert (not resp.error, resp.error) and resp
+  local resp, _, errmsg = json.decode (table.concat (resp))
+  return resp or { error = errmsg }
 end
 
 local pol_privquery = function (self, cmd, parm)
@@ -51,7 +49,10 @@ end
 
 local poloniex_api = {}
 function poloniex_api:balance ()
-  local balances = pol_privquery (self, "returnBalances")
+  local r = pol_privquery (self, "returnBalances")
+  if r.error then return nil, r.error end
+
+  local balances = r
   for code, balance in pairs (balances) do
     balances[code] = tonumber (balance)
     if balances[code] == 0 then
@@ -63,40 +64,55 @@ function poloniex_api:balance ()
 end
 
 function poloniex_api:tradehistory (market1, market2)
-  return pol_privquery (self, "returnTradeHistory", {currencyPair = market1 .. "_" .. market2})
+  local r = pol_privquery (self, "returnTradeHistory", {currencyPair = market1 .. "_" .. market2})
+  if r.error then return nil, r.error end
+  return r
 end
 
 function poloniex_api:buy (market1, market2, rate, quantity)
-  return pol_privquery (self, "buy", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
+  local r = pol_privquery (self, "buy", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
+  if r.error then return nil, r.error end
+  return r
 end
 
 function poloniex_api:sell (market1, market2, rate, quantity)
-  return pol_privquery (self, "sell", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
+  local r = pol_privquery (self, "sell", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
+  if r.error then return nil, r.error end
+  return r
 end
 
 function poloniex_api:cancelorder (market1, market2, ordernumber)
-  return pol_privquery (self, "cancelOrder", {currencyPair = market1 .. "_" .. market2, orderNumber = ordernumber})
+  local r = pol_privquery (self, "cancelOrder", {currencyPair = market1 .. "_" .. market2, orderNumber = ordernumber})
+  if r.error then return nil, r.error end
+  return r
 end
 
 function poloniex_api:markethistory (market1, market2)
-  return pol_pubquery (self, "returnTradeHistory", {currencyPair = market1 .. "_" .. market2})
+  local r = pol_pubquery (self, "returnTradeHistory", {currencyPair = market1 .. "_" .. market2})
+  if r.error then return nil, r.error end
+  return r
 end
 
 function poloniex_api:orderbook (market1, market2)
   local r = pol_pubquery (self, "returnOrderBook", {currencyPair = market1 .. "_" .. market2})
+  if r.error then return nil, r.error end
+
   r.buy  = zip (unpack (r.bids))
   r.sell = zip (unpack (r.asks))
   -- price table at index 1 and amount table at index 2
   -- connect them to the right field name and remove old reference
-  r.buy.price, r.buy.amount = r.buy[1], r.buy[2]
-  r.sell.price, r.sell.amount = r.sell[1], r.sell[2]
-  r.buy[1], r.buy[2], r.sell[1], r.sell[2] = nil
+  r.buy.price,   r.buy[1] = r.buy[1], nil
+  r.buy.amount,  r.buy[2] = r.buy[2], nil
+  r.sell.price,  r.sell[1] = r.sell[1], nil
+  r.sell.amount, r.sell[2] = r.sell[2], nil
   r.bids, r.asks = nil
   return r
 end
 
 function poloniex_api:openorders (market1, market2)
-  return pol_privquery (self, "returnOpenOrders", {currencyPair = market1 .. "_" .. market2})
+  local r = pol_privquery (self, "returnOpenOrders", {currencyPair = market1 .. "_" .. market2})
+  if r.error then return nil, r.error end
+  return r
 end
 
 local session_mt = { __index = poloniex_api }

@@ -121,7 +121,8 @@ function mintpal_api:buy (market1, market2, rate, quantity)
   local r = self:mp_webquery ("POST", "/action/addOrder", 
                               urlencode_parm (data), {["X-Requested-With"] = "XMLHttpRequest"})
   r = json.decode (r)
-  return assert (r.response == "success", r.reason) and r
+  if r.response ~= "success" then return nil, r.reason end
+  return r
 end
 
 function mintpal_api:sell (market1, market2, rate, quantity)
@@ -137,7 +138,8 @@ function mintpal_api:sell (market1, market2, rate, quantity)
   local r = self:mp_webquery ("POST", "/action/addOrder", 
                               urlencode_parm (data), {["X-Requested-With"] = "XMLHttpRequest"})
   r = json.decode (r)
-  return assert (r.response == "success", r.reason) and r
+  if r.response ~= "success" then return nil, r.reason end
+  return r
 end
 
 function mintpal_api:cancelorder (market1, market2, ordernumber)
@@ -149,11 +151,14 @@ function mintpal_api:cancelorder (market1, market2, ordernumber)
   local r = self:mp_webquery ("POST", "/action/cancelOrder", 
                               urlencode_parm (data), {["X-Requested-With"] = "XMLHttpRequest"})
   r = json.decode (r)
-  return assert (r.response == "success", r.reason) and r
+  if r.response ~= "success" then return nil, r.reason end
+  return r
 end
 
 function mintpal_api:markethistory (market1, market2)
-  return mp_apiv2query ("GET", string.format ("/market/trades/%s/%s", market2, market1))
+  local r = mp_apiv2query ("GET", string.format ("/market/trades/%s/%s", market2, market1))
+  if r.status ~= "success" then return nil, r.message end
+  return r
 end
 
 function mintpal_api:orderbook (market1, market2)
@@ -177,7 +182,8 @@ function mintpal_api:openorders (market1, market2)
   local r = self:mp_webquery ("GET", "/action/getUserOrders/" .. mp_getmarketid (market1, market2), 
                               nil, {["X-Requested-With"] = "XMLHttpRequest"})
   r = json.decode (r)
-  return assert (r.response == "success", r.reason) and r
+  if r.response ~= "success" then return nil, r.reason end
+  return r.data
 end
 
 local find_incapcookies = function (t)

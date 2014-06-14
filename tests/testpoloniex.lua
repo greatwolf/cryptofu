@@ -9,7 +9,7 @@ local session = require 'exchange.poloniex' { key = keys.key, secret = keys.secr
 assert (session)
 
 local make_retry = require 'tools.retry'
-local session = make_retry (session, 3, "closed", "timeout")
+session = make_retry (session, 3, "closed", "timeout")
 
 local tests = 
 {
@@ -24,17 +24,23 @@ local tests =
 
     dump (r)
   end,
+  
+  test_bogusmarket = function ()
+    local r, errmsg = session:markethistory ("BTC", "MRO")
+    print (errmsg)
+    assert (not r and errmsg)
+  end,
 
   test_buy = function ()
     local r = session:buy ("BTC", "LTC", 0.00015, 1)
 
-    dump (r)
+    assert (r.orderNumber > 1)
   end,
 
   test_sell = function ()
-    local r = pltest.assertraise (function()
-      session:sell("BTC", "LTC", 0.15, 1)
-    end, "Not enough LTC.")
+    local r, err = session:sell ("BTC", "LTC", 0.15, 1)
+
+    assert (not r and err == "Not enough LTC.")
   end,
 
   test_cancelorder = function ()
@@ -54,7 +60,8 @@ local tests =
   test_orderbook = function ()
     local r = session:orderbook ("BTC", "LTC")
 
-    dump (r)
+    assert (r.sell.amount and r.buy.amount)
+    assert (r.sell.price and r.buy.price)
   end,
   
   test_openorders = function ()
@@ -66,8 +73,9 @@ local tests =
   test_mixcasequery = function ()
     local r = session:orderbook ("BtC", "xmR")
 
-    dump (r)
     assert (r.buy and r.sell)
+    assert (r.sell.amount and r.buy.amount)
+    assert (r.sell.price and r.buy.price)
   end
 }
 

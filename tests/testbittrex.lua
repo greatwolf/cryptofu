@@ -17,6 +17,8 @@ local tests =
     local r = session:balance ()
 
     dump (r)
+    assert (r.AC > 0)
+    assert (r.BTC)
   end,
 
   test_tradehistory = function ()
@@ -26,26 +28,21 @@ local tests =
   end,
 
   test_buy = function ()
-    local r = session:buy ("BTC", "LTC", 0.00015, 1)
+    local r, errmsg = session:buy ("BTC", "LTC", 0.00015, 1)
 
-    assert (r.message == "INSUFFICIENT_FUNDS", r.message)
-    dump (r)
+    assert (not r and errmsg == "INSUFFICIENT_FUNDS")
   end,
 
   test_sell = function ()
-    local r = session:sell("BTC", "LTC", 0.15, 1)
+    local r, errmsg = session:sell("BTC", "LTC", 0.15, 1)
 
-    assert (r.message == "INSUFFICIENT_FUNDS", r.message)
-    dump (r)
+    assert (not r and errmsg == "INSUFFICIENT_FUNDS")
   end,
 
-  -- test_cancelorder = function ()
-    -- local orders = session:openorders ("BTC", "LTC")
-    -- for _, order in ipairs (orders) do
-      -- local r = session:cancelorder ("BTC", "LTC", order.orderNumber)
-      -- dump (r)
-    -- end
-  -- end,
+  test_cancelorder = function ()
+    local r, errmsg = session:cancelorder ("BTC", "LTC", 123)
+    assert (not r and errmsg == "orderuuid not valid")
+  end,
 
   test_openorders = function ()
     local r = session:openorders ("BTC", "LTC")
@@ -62,15 +59,17 @@ local tests =
   test_orderbook = function ()
     local r = session:orderbook ("BTC", "LTC")
 
-    dump (r)
     assert (r.buy and r.sell)
+    assert (r.buy.price and r.sell.price)
+    assert (r.buy.amount and r.sell.amount)
   end,
 
   test_mixcasequery = function ()
     local r = session:orderbook ("BtC", "xmR")
 
-    dump (r)
     assert (r.buy and r.sell)
+    assert (r.buy.price and r.sell.price)
+    assert (r.buy.amount and r.sell.amount)
   end
 }
 

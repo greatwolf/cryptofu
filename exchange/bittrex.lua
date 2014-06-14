@@ -64,30 +64,41 @@ function bittrex_api:balance ()
 end
 
 function bittrex_api:tradehistory (market1, market2)
-  return bittrex_privquery (self, "/account/getorderhistory", {market = market1 .. "-" .. market2})
+  local r = bittrex_privquery (self, "/account/getorderhistory", {market = market1 .. "-" .. market2})
+  if not r.success then return nil, r.message end
+  return r.result
 end
 
 function bittrex_api:buy (market1, market2, rate, quantity)
-  return bittrex_privquery (self, "/market/buylimit", {market = market1 .. "-" .. market2, rate = rate, quantity = quantity})
+  local r = bittrex_privquery (self, "/market/buylimit", {market = market1 .. "-" .. market2, rate = rate, quantity = quantity})
+  if not r.success then return nil, r.message end
+  return r
 end
 
 function bittrex_api:sell (market1, market2, rate, quantity)
-  return bittrex_privquery (self, "/market/selllimit", {market = market1 .. "-" .. market2, rate = rate, quantity = quantity})
+  local r = bittrex_privquery (self, "/market/selllimit", {market = market1 .. "-" .. market2, rate = rate, quantity = quantity})
+  if not r.success then return nil, r.message end
+  return r
 end
 
 function bittrex_api:cancelorder (market1, market2, ordernumber)
-  return pol_privquery (self, "/market/cancel", {market = market1 .. "-" .. market2, uuid = ordernumber})
+  local r = bittrex_privquery (self, "/market/cancel", {market = market1 .. "-" .. market2, uuid = ordernumber})
+  if not r.success then return nil, r.message end
+  return r
 end
 
 function bittrex_api:markethistory (market1, market2)
-  return bittrex_pubquery (self, "/public/getmarkethistory", {market = market1 .. "-" .. market2})
+  local r = bittrex_pubquery (self, "/public/getmarkethistory", {market = market1 .. "-" .. market2})
+  if not r.success then return nil, r.message end
+  return r.result
 end
 
 function bittrex_api:orderbook (market1, market2)
   local r = bittrex_pubquery (self, "/public/getorderbook",
                               {market = market1 .. "-" .. market2,
                               ["type"] = "both"})
-  r = assert (r.success, r.message) and r.result
+  if not r.success then return nil, r.message end
+  r = r.result
 
   r.buy  = map_transpose (r.buy, { Rate = "price", Quantity = "amount" })
   r.sell = map_transpose (r.sell, { Rate = "price", Quantity = "amount" })
@@ -96,7 +107,9 @@ function bittrex_api:orderbook (market1, market2)
 end
 
 function bittrex_api:openorders (market1, market2)
-  return bittrex_privquery (self, "/market/getopenorders", {market = market1 .. "-" .. market2})
+  local r = bittrex_privquery (self, "/market/getopenorders", {market = market1 .. "-" .. market2})
+  if not r.success then return nil, r.message end
+  return r.result
 end
 
 local session_mt = { __index = bittrex_api }
