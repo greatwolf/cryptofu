@@ -96,6 +96,10 @@ end
 
 function mintpal_api:tradehistory (market1, market2)
   local resp = self:mp_webquery ("GET", string.format ("/market/%s/%s", market2, market1))
+  -- fetching tradehistory causes csrf_token to change.
+  -- grab the new csrf_token from this response and save it.
+  self:mp_updatecsrf_token (resp, market1, market2)
+  -- Now search and parse the trade history
   resp = resp:match "<h2>Your Recent Trades</h2>.+<tbody>(.+)</tbody>"
   local trade_pat = [[<tr><td>([%d :-]+)</td><td>([BS][UE][YL]L?)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td></tr>]]
   local trades = {}
@@ -218,12 +222,17 @@ local mintpal_create = function (cookies)
   local csrf_tokens = {}
   function session:mp_getcsrf_token (args)
     local currencypair = (args[2] .. "/" .. args[1]):upper()
-    if not csrf_tokens[currencypair] or args.forcefetch then
-      local r = self:mp_webquery ("GET", "/market/" .. currencypair)
-      csrf_tokens[currencypair] = assert(r:match "var token = '(%w+)';",
-                                         "could not get csrf_token!")
+    if not csrf_tokens[currencypair] or args.force_newtoken then
+      local r = self:mp_webquery ("GET", ("/market/%s/%s"):format (args[2], args[1]))
+      self:mp_updatecsrf_token (r, args[1], args[2])
     end
     return csrf_tokens[currencypair]
+  end
+  
+  function session:mp_updatecsrf_token (resp, market1, market2)
+    local currencypair = (market2 .. "/" .. market1):upper()
+    csrf_tokens[currencypair] = assert(resp:match "var token = '(%w+)';",
+                                       "could not get csrf_token!")
   end
 
   return setmetatable (session, mintpal_api)
