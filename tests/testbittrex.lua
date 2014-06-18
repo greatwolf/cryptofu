@@ -41,7 +41,7 @@ local tests =
 
   test_cancelorder = function ()
     local r, errmsg = session:cancelorder ("BTC", "LTC", 123)
-    assert (not r and errmsg == "orderuuid not valid")
+    assert (not r and errmsg == "UUID_INVALID")
   end,
 
   test_openorders = function ()
