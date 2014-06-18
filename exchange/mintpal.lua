@@ -1,14 +1,14 @@
-local https = require 'ssl.https'
-local json = require 'dkjson'
-local imap = require 'pl.tablex'.imap
-local util = require 'tools.util'
-local map_transpose = require 'tools.util'.map_transpose
+local https =           require 'ssl.https'
+local json =            require 'dkjson'
+local imap =            require 'pl.tablex'.imap
+local update =          require 'pl.tablex'.update
+local map_transpose =   require 'tools.util'.map_transpose
+local urlencode_parm =  require 'tools.util'.urlencode_parm
 
-local urlencode_parm, log = util.urlencode_parm, util.log
 local url, apiurl = "https://www.mintpal.com", "https://api.mintpal.com"
 local tradefee = 0.15 / 100
 
-socket.http.TIMEOUT = 3
+socket.http.TIMEOUT = 75
 
 -- internal querying functions for pulling data off mintpal servers
 -- forward declares
@@ -21,7 +21,7 @@ local mp_validresponse = function (resp)
   for each in resp:gmatch "[Ii]ncapsula" do
     count = count + 1
   end
-  return assert (count < 2, "response not from MintPal!")
+  return assert (count < 2, "response not from MintPal!") and resp
 end
 
 local mp_getmarketid
@@ -57,28 +57,24 @@ mp_query = function (method, headers, url, path, data)
       source = data and ltn12.source.string (data),
       sink = ltn12.sink.table (resp),
     }
-  assert(r, c)
-  return table.concat(resp)
+  return assert(r, c) and table.concat(resp)
 end
 
 mp_apiv2query = function (method, urlpath, data)
-  local r = mp_query (method, nil, apiurl .. "/v2", urlpath, data)
+  local r = mp_query (method, {connection = "keep-alive"}, apiurl .. "/v2", urlpath, data)
 
   return assert (json.decode (r))
 end
 
 mp_webquery = function (sessionheaders, method, path, data, extraheaders)
-  local post_headers = {}
-  for k, v in pairs (sessionheaders) do post_headers[k] = v end
+  local post_headers = update ({}, sessionheaders)
   if extraheaders then
-    for k, v in pairs (extraheaders) do post_headers[k] = v end
+    post_headers = update (post_headers, extraheaders)
   end
 
   post_headers["content-length"] = data and #data
   local r = mp_query (method, post_headers, url, path, data)
-  mp_validresponse (r)
-
-  return r
+  return mp_validresponse (r)
 end
 
 -- main MintPal api functions
@@ -112,55 +108,65 @@ function mintpal_api:tradehistory (market1, market2)
   return trades
 end
 
-function mintpal_api:buy (market1, market2, rate, quantity)
-  local marketid = mp_getmarketid (market1, market2)
+local mp_executeorder = function (self, market1, market2, action, extra_data)
+  local marketid   = mp_getmarketid (market1, market2)
+  local csrf_token = "csrf_token_market" .. marketid
   local data = 
   {
-    ["csrf_token_market" .. marketid] = self:mp_getcsrf_token {market1, market2},
-    ["type"] = 0,
+    [csrf_token] = self:mp_getcsrf_token {market1, market2},
     market = marketid,
-    amount = quantity,
-    price = rate,
-    buyNetTotal = quantity * rate * (1 + tradefee),
   }
-  local r = self:mp_webquery ("POST", "/action/addOrder", 
+  data = update (data, extra_data)
+  local r = self:mp_webquery ("POST", action,
                               urlencode_parm (data), {["X-Requested-With"] = "XMLHttpRequest"})
+  if r:match "unknown error occurred%." then
+    data[csrf_token] = self:mp_getcsrf_token {market1, market2, force_newtoken = true}
+    r = self:mp_webquery ("POST", action,
+                          urlencode_parm (data), {["X-Requested-With"] = "XMLHttpRequest"})
+  end
   r = json.decode (r)
   if r.response ~= "success" then return nil, r.reason end
+  return r
+end
+
+function mintpal_api:buy (market1, market2, rate, quantity)
+  local data = 
+  {
+    type = 0,
+    amount = quantity, price = rate,
+    buyNetTotal = quantity * rate * (1 + tradefee),
+  }
+  
+  local r, errmsg = mp_executeorder (self, market1, market2, "/action/addOrder", data)
+  if not r then return r, errmsg end
+  local resp = self:openorders (market1, market2)
+  if resp and resp[1].time == os.date ("!%Y-%m-%d %X", r.timestamp) then
+    r.orderNumber = resp[1].order_id
+  end
   return r
 end
 
 function mintpal_api:sell (market1, market2, rate, quantity)
-  local marketid = mp_getmarketid (market1, market2)
   local data = 
   {
-    ["csrf_token_market" .. marketid] = self:mp_getcsrf_token {market1, market2},
-    ["type"] = 1,
-    market = marketid,
-    amount = quantity,
-    price = rate,
+    type = 1,
+    amount = quantity, price = rate,
     sellNetTotal = quantity * rate * (1 - tradefee),
   }
-  local r = self:mp_webquery ("POST", "/action/addOrder", 
-                              urlencode_parm (data), {["X-Requested-With"] = "XMLHttpRequest"})
-  r = json.decode (r)
-  if r.response ~= "success" then return nil, r.reason end
+
+  local r, errmsg = mp_executeorder (self, market1, market2, "/action/addOrder", data)
+  if not r then return r, errmsg end
+  local resp = self:openorders (market1, market2)
+  if resp and resp[1].time == os.date ("!%Y-%m-%d %X", r.timestamp) then
+    r.orderNumber = resp[1].order_id
+  end
   return r
 end
 
 function mintpal_api:cancelorder (market1, market2, ordernumber)
-  local marketid = mp_getmarketid (market1, market2)
-  local data = 
-  {
-    ["csrf_token_market" .. marketid] = self:mp_getcsrf_token {market1, market2},
-    market = marketid,
-    orderId = ordernumber,
-  }
-  local r = self:mp_webquery ("POST", "/action/cancelOrder", 
-                              urlencode_parm (data), {["X-Requested-With"] = "XMLHttpRequest"})
-  r = json.decode (r)
-  if r.response ~= "success" then return nil, r.reason end
-  return r
+  local data = { orderId = ordernumber, }
+
+  return mp_executeorder (self, market1, market2, "/action/cancelOrder", data)
 end
 
 function mintpal_api:markethistory (market1, market2)
