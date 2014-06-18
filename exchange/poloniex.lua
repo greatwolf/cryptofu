@@ -3,16 +3,15 @@ local crypto = require 'crypto'
 local json = require 'dkjson'
 local tablex = require 'pl.tablex'
 local util = require 'tools.util'
-local zip = require 'pl.tablex'.zip
 
-local urlencode_parm, log = util.urlencode_parm, util.log
+local urlencode_parm = util.urlencode_parm
 local url = "https://poloniex.com"
 
 local pol_query = function (method, urlpath, headers, data)
   local req_headers = { connection = "keep-alive" }
   if headers then tablex.update (req_headers, headers) end
-  local resp = {}
-  local r, c, h = https.request
+  local resp, _, errmsg = {}
+  local r, c, h, s = https.request
     {
       method = method,
       url = url .. urlpath,
@@ -20,9 +19,11 @@ local pol_query = function (method, urlpath, headers, data)
       source = data and ltn12.source.string (data),
       sink = ltn12.sink.table (resp),
     }
+  resp = table.concat (resp)
+  if not r then print ("query err:", r, c, h, s); os.exit (1) end
   assert (r, c)
 
-  local resp, _, errmsg = json.decode (table.concat (resp))
+  resp, _, errmsg = json.decode (resp)
   return resp or { error = errmsg }
 end
 
@@ -97,8 +98,8 @@ function poloniex_api:orderbook (market1, market2)
   local r = pol_pubquery (self, "returnOrderBook", {currencyPair = market1 .. "_" .. market2})
   if r.error then return nil, r.error end
 
-  r.buy  = zip (unpack (r.bids))
-  r.sell = zip (unpack (r.asks))
+  r.buy  = tablex.zip (unpack (r.bids))
+  r.sell = tablex.zip (unpack (r.asks))
   -- price table at index 1 and amount table at index 2
   -- connect them to the right field name and remove old reference
   r.buy.price,   r.buy[1] = r.buy[1], nil

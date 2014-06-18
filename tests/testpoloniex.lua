@@ -34,6 +34,7 @@ local tests =
   test_buy = function ()
     local r = session:buy ("BTC", "LTC", 0.00015, 1)
 
+    dump (r)
     assert (r.orderNumber > 1)
   end,
 
