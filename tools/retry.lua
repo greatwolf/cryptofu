@@ -26,7 +26,7 @@ local retry_wrapfunc = function (f, reasons, retry_limit)
       if not find (reasons, res[2]) then break end
     end
     logwarn._if (attempts > 1, "retry fails after " .. attempts ..  " attempt(s).")
-    error (res[2])
+    error (res[2], 2)
   end
 end
 
