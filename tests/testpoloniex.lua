@@ -17,6 +17,7 @@ local tests =
     local r = session:balance ()
 
     dump (r)
+    assert (r.BTC > 0)
   end,
 
   test_tradehistory = function ()
@@ -41,7 +42,7 @@ local tests =
   test_sell = function ()
     local r, err = session:sell ("BTC", "LTC", 0.15, 1)
 
-    assert (not r and err == "Not enough LTC.")
+    assert (not r and err == "Not enough LTC.", err)
   end,
 
   test_cancelorder = function ()
@@ -81,5 +82,3 @@ local tests =
 }
 
 utest.run (tests)
--- utest.run_single (tests, "test_openorders")
--- utest.run_single (tests, "test_orderbook")
