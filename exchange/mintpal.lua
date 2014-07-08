@@ -97,7 +97,7 @@ function mintpal_api:tradehistory (market1, market2)
   self:mp_updatecsrf_token (resp, market1, market2)
   -- Now search and parse the trade history
   resp = resp:match "<h2>Your Recent Trades</h2>.+<tbody>(.+)</tbody>"
-  local trade_pat = [[<tr><td>([%d :-]+)</td><td>([BS][UE][YL]L?)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td></tr>]]
+  local trade_pat = [[<tr><td>([%d :-]+)</td><td><span[^\n>]+>([BS][UE][YL]L?)</span></td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td><td>(%d+%.?%d*)</td></tr>]]
   local trades = {}
   -- if no past trade history for this market pair
   -- return empty table

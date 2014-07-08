@@ -95,6 +95,5 @@ local tests_webquery =
 
 utest.run (tests_v2query)
 utest.run (tests_webquery)
--- utest.run_single (tests, "test_tradehistory")
--- utest.run_single (tests, "test_balance")
--- utest.run_single (tests, "test_sell")
+-- utest.run_single (tests_webquery, "test_tradehistory")
+-- utest.run_single (tests_webquery, "test_sell")
