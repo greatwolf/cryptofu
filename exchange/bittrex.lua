@@ -51,16 +51,17 @@ end
 
 local bittrex_api = {}
 function bittrex_api:balance ()
-  local balances = bittrex_privquery (self, "/account/getbalances")
-  assert (balances.success, balances.message)
+  local r = bittrex_privquery (self, "/account/getbalances")
+  if not r.success then return nil, r.message end
 
-  balances = balances.result
-  for _, coin in pairs (balances) do
+  local portfolio = r.result
+  for i, coin in ipairs (portfolio) do
     local avail = tonumber (coin.Available)
-    balances[coin.Currency] = avail > 0 and avail or nil
+    portfolio[coin.Currency] = avail > 0 and avail or nil
+    portfolio[i] = nil
   end
-  balances.BTC = balances.BTC or 0
-  return balances
+  portfolio.BTC = portfolio.BTC or 0
+  return portfolio
 end
 
 function bittrex_api:tradehistory (market1, market2)

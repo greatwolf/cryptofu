@@ -17,7 +17,6 @@ local tests =
     local r = session:balance ()
 
     dump (r)
-    assert (r.AC > 0)
     assert (r.BTC)
   end,
 
