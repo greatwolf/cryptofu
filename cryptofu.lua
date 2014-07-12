@@ -42,7 +42,7 @@ local loadconfig = function (cfg_file)
 end
 
 
-print "CryptoCycle Trader"
+print "CryptoFu Trader"
 loadconfig (config)
 dispatcher.startup()
 dispatcher.mainloop()
