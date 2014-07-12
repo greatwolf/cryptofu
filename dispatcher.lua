@@ -11,7 +11,6 @@
     - Need a way to add/remove tasks from the dispatcher list.
 --]]
 
-require 'luarocks_path'
 local ffi = require 'ffi'
 
 

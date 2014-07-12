@@ -25,16 +25,16 @@ local loadmodule = function (name)
 end
 
 local loadconfig = function (cfg_file)
-  local modules = {}
+  local cfg = {}
   local noerr, errmsg = pcall (function ()
     log ("Reading ", cfg_file)
-    setfenv (assert (loadfile (cfg_file)), modules) ()
-    modules = modules.modules
+    setfenv (assert (loadfile (cfg_file)), cfg) ()
+    package.preload.apikeys = function () return cfg.apikeys end
   end)
   log._if (not noerr, errmsg)
   if not noerr then return end
 
-  for _, mod in ipairs (modules) do
+  for _, mod in ipairs (cfg.modules) do
     log ("Loading ", mod)
     local noerr, errmsg = loadmodule (mod)
     log._if (not noerr, errmsg)
