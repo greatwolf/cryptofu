@@ -81,4 +81,5 @@ local tests =
   end
 }
 
+utest.test_delay (800)
 utest.run (tests)

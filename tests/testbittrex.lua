@@ -72,6 +72,5 @@ local tests =
   end
 }
 
+utest.test_delay (800)
 utest.run (tests)
--- utest.run_single (tests, "test_openorders")
--- utest.run_single (tests, "test_orderbook")

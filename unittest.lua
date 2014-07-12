@@ -3,7 +3,7 @@ local clock = os.clock
 local print, pcall = print, pcall
 ffi.cdef [[void Sleep (int ms);]]
 local Sleep = ffi.C.Sleep
-local sleep_delay = 800 -- ms
+local sleep_delay = 0 -- ms
 
 local function run_single (testgroup, testname)
   assert (testgroup[testname])
@@ -33,7 +33,6 @@ local function run (tests)
     testcount = testcount + 1
     Sleep (sleep_delay)
   end
-  local elapse = clock() - start
   elapse = elapse < 2 and string.format ("%.2fms", elapse * 1000)
                        or string.format ("%.2fs", elapse)
 
@@ -41,4 +40,8 @@ local function run (tests)
                         elapse, testfail, testcount))
 end
 
-return { run = run, run_single = run_single }
+local function delay (ms)
+  sleep_delay = ms
+end
+
+return { run = run, run_single = run_single, test_delay = delay }
