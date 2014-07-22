@@ -33,23 +33,21 @@ local tests =
   end,
 
   test_buy = function ()
-    local r = session:buy ("BTC", "LTC", 0.00015, 1)
+    local r, errmsg = assert (session:buy ("BTC", "VTC", 0.000015, 10))
 
     dump (r)
-    assert (r.orderNumber > 1)
   end,
 
   test_sell = function ()
-    local r, err = session:sell ("BTC", "LTC", 0.15, 1)
+    local r, errmsg = assert (session:sell ("BTC", "VTC", 0.15, 0.01))
 
-    assert (not r and err == "Not enough LTC.", err)
+    dump (r)
   end,
 
   test_cancelorder = function ()
-    local orders = session:openorders ("BTC", "LTC")
+    local orders = session:openorders ("BTC", "VTC")
     for _, order in ipairs (orders) do
-      local r = session:cancelorder ("BTC", "LTC", order.orderNumber)
-      dump (r)
+      assert (session:cancelorder ("BTC", "VTC", order.orderNumber))
     end
   end,
 
@@ -67,7 +65,7 @@ local tests =
   end,
   
   test_openorders = function ()
-    local r = session:openorders ("BTC", "LTC")
+    local r = session:openorders ("BTC", "VTC")
 
     dump (r)
   end,

@@ -49,13 +49,11 @@ local tests_webquery =
     local r = assert (session:balance ())
 
     dump (r)
-    assert (r.AC > 0)
+    assert (r.BTC > 0)
   end,
 
   test_openorders = function ()
     local r = assert (session:openorders ("BTC", "LTC"))
-    dump (r)
-    r = assert (session:openorders ("BTC", "AC"))
     dump (r)
     r = assert (session:openorders ("BTC", "CINnI"))
     dump (r)
@@ -68,7 +66,7 @@ local tests_webquery =
   end,
 
   test_sell = function ()
-    local r = assert (session:sell ("BTC", "AC", 0.015, 1))
+    local r = assert (session:sell ("BTC", "MINT", 0.015, 1))
 
     dump (r)
   end,
@@ -77,11 +75,6 @@ local tests_webquery =
     local orders = session:openorders ("BTC", "CinnI")
     for _, each in ipairs (orders) do
       dump (assert (session:cancelorder("BTC", "cinni", each.order_id)))
-    end
-    
-    orders = session:openorders ("BTC", "AC")
-    for _, each in ipairs (orders) do
-      dump (assert (session:cancelorder("BTC", "AC", each.order_id)))
     end
   end,
 
@@ -95,5 +88,3 @@ local tests_webquery =
 
 utest.run (tests_v2query)
 utest.run (tests_webquery)
--- utest.run_single (tests_webquery, "test_tradehistory")
--- utest.run_single (tests_webquery, "test_sell")

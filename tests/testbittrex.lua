@@ -33,18 +33,20 @@ local tests =
   end,
 
   test_sell = function ()
-    local r, errmsg = session:sell("BTC", "LTC", 0.15, 1)
+    local r, errmsg = assert (session:sell("BTC", "VTC", 0.15, 0.01))
 
-    assert (not r and errmsg == "INSUFFICIENT_FUNDS")
+    dump (r)
   end,
 
   test_cancelorder = function ()
-    local r, errmsg = session:cancelorder ("BTC", "LTC", 123)
-    assert (not r and errmsg == "UUID_INVALID")
+    local orders = session:openorders ("BTC", "VTC")
+    for _, order in ipairs (orders) do
+      assert (session:cancelorder ("BTC", "VTC", order.OrderUuid))
+    end
   end,
 
   test_openorders = function ()
-    local r = session:openorders ("BTC", "LTC")
+    local r = session:openorders ("BTC", "VTC")
 
     dump (r)
   end,
@@ -72,5 +74,5 @@ local tests =
   end
 }
 
-utest.test_delay (800)
+utest.test_delay (600)
 utest.run (tests)

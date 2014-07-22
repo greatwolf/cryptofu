@@ -73,13 +73,15 @@ end
 function bittrex_api:buy (market1, market2, rate, quantity)
   local r = bittrex_privquery (self, "/market/buylimit", {market = market1 .. "-" .. market2, rate = rate, quantity = quantity})
   if not r.success then return nil, r.message end
-  return r
+  r.result.uuid, r.result.orderNumber = nil, r.result.uuid
+  return r.result
 end
 
 function bittrex_api:sell (market1, market2, rate, quantity)
   local r = bittrex_privquery (self, "/market/selllimit", {market = market1 .. "-" .. market2, rate = rate, quantity = quantity})
   if not r.success then return nil, r.message end
-  return r
+  r.result.uuid, r.result.orderNumber = nil, r.result.uuid
+  return r.result
 end
 
 function bittrex_api:cancelorder (market1, market2, ordernumber)
