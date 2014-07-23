@@ -11,44 +11,12 @@ assert (session)
 local make_retry = require 'tools.retry'
 session = make_retry (session, 3, "closed", "timeout")
 
-local tests = 
-{
-  test_balance = function ()
-    local r = session:balance ()
-
-    dump (r)
-    assert (r.BTC > 0)
-  end,
-
-  test_tradehistory = function ()
-    local r = session:tradehistory ("BTC", "LTC")
-
-    dump (r)
-  end,
-  
+local tests_pubapi = 
+{  
   test_bogusmarket = function ()
     local r, errmsg = session:markethistory ("BTC", "MRO")
     print (errmsg)
     assert (not r and errmsg)
-  end,
-
-  test_buy = function ()
-    local r, errmsg = assert (session:buy ("BTC", "VTC", 0.000015, 10))
-
-    dump (r)
-  end,
-
-  test_sell = function ()
-    local r, errmsg = assert (session:sell ("BTC", "VTC", 0.15, 0.01))
-
-    dump (r)
-  end,
-
-  test_cancelorder = function ()
-    local orders = session:openorders ("BTC", "VTC")
-    for _, order in ipairs (orders) do
-      assert (session:cancelorder ("BTC", "VTC", order.orderNumber))
-    end
   end,
 
   test_markethistory = function ()
@@ -63,12 +31,6 @@ local tests =
     assert (r.sell.amount and r.buy.amount)
     assert (r.sell.price and r.buy.price)
   end,
-  
-  test_openorders = function ()
-    local r = session:openorders ("BTC", "VTC")
-
-    dump (r)
-  end,
 
   test_mixcasequery = function ()
     local r = session:orderbook ("BtC", "xmR")
@@ -79,5 +41,49 @@ local tests =
   end
 }
 
-utest.test_delay (800)
-utest.run (tests)
+local tests_privapi = 
+{
+  test_balance = function ()
+    local r = session:balance ()
+
+    dump (r)
+    assert (r.BTC > 0)
+  end,
+
+  test_tradehistory = function ()
+    local r = session:tradehistory ("BTC", "LTC")
+
+    dump (r)
+  end,
+
+  test_openorders = function ()
+    local r = session:openorders ("BTC", "VTC")
+
+    dump (r)
+  end,
+
+  test_buy = function ()
+    local r, errmsg = assert (session:buy ("BTC", "VTC", 0.000015, 10))
+
+    dump (r)
+    assert (r.orderNumber)
+  end,
+
+  test_sell = function ()
+    local r, errmsg = assert (session:sell ("BTC", "VTC", 0.15, 0.01))
+
+    dump (r)
+    assert (r.orderNumber)
+  end,
+
+  test_cancelorder = function ()
+    local orders = session:openorders ("BTC", "VTC")
+    for _, order in ipairs (orders) do
+      assert (session:cancelorder ("BTC", "VTC", order.orderNumber))
+    end
+  end,
+}
+
+utest.test_delay (700)
+utest.run (tests_pubapi)
+utest.run (tests_privapi)
