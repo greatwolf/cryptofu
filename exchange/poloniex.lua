@@ -1,14 +1,14 @@
-local https = require 'ssl.https'
-local crypto = require 'crypto'
-local json = require 'dkjson'
-local tablex = require 'pl.tablex'
-local util = require 'tools.util'
+local https          = require 'ssl.https'
+local crypto         = require 'crypto'
+local json           = require 'dkjson'
+local tablex         = require 'pl.tablex'
+local urlencode_parm = require 'tools.util'.urlencode_parm
+local z              = require 'zlib' -- for gzip
 
-local urlencode_parm = util.urlencode_parm
 local url = "https://poloniex.com"
 
 local pol_query = function (method, urlpath, headers, data)
-  local req_headers = { connection = "keep-alive" }
+  local req_headers = { connection = "keep-alive", ["accept-encoding"] = "gzip", }
   if headers then tablex.update (req_headers, headers) end
   local resp, _, errmsg = {}
   local r, c, h, s = https.request
@@ -23,6 +23,9 @@ local pol_query = function (method, urlpath, headers, data)
   if not r then print ("query err:", r, c, h, s); os.exit (1) end
   assert (r, c)
 
+  if h["content-encoding"] == "gzip" then
+    resp = z.inflate (resp):read "*a"
+  end
   resp, _, errmsg = json.decode (resp)
   return resp or { error = errmsg }
 end
