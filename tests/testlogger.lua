@@ -21,7 +21,7 @@ local result_str = function (name, str)
                         os.date "%m-%d %H:%M:%S", name, str)
 end
 
-local tests =
+utest.group "logger"
 {
   test_logwithcustomwriter = function ()
     mock_writer:clear ()
@@ -74,4 +74,4 @@ local tests =
   end,
 }
 
-utest.run (tests)
+utest.run "logger"

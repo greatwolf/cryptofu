@@ -11,12 +11,12 @@ assert (session)
 local make_retry = require 'tools.retry'
 session = make_retry (session, 3, "closed", "timeout")
 
-local tests_pubapi = 
-{  
+utest.group "poloniex_pubapi"
+{
   test_bogusmarket = function ()
     local r, errmsg = session:markethistory ("BTC", "MRO")
-    print (errmsg)
-    assert (not r and errmsg)
+
+    assert (not r and errmsg == "Invalid currency pair.", errmsg)
   end,
 
   test_markethistory = function ()
@@ -41,7 +41,8 @@ local tests_pubapi =
   end
 }
 
-local tests_privapi = 
+local test_orders = {}
+local poloniex_privapi = utest.group "poloniex_privapi"
 {
   test_balance = function ()
     local r = session:balance ()
@@ -66,24 +67,24 @@ local tests_privapi =
     local r, errmsg = assert (session:buy ("BTC", "VTC", 0.000015, 10))
 
     dump (r)
-    assert (r.orderNumber)
+    table.insert (test_orders, assert (r.orderNumber))
   end,
 
   test_sell = function ()
     local r, errmsg = assert (session:sell ("BTC", "VTC", 0.15, 0.01))
 
     dump (r)
-    assert (r.orderNumber)
+    table.insert (test_orders, assert (r.orderNumber))
   end,
 
   test_cancelorder = function ()
-    local orders = session:openorders ("BTC", "VTC")
-    for _, order in ipairs (orders) do
-      assert (session:cancelorder ("BTC", "VTC", order.orderNumber))
+    for i = #test_orders, 1, -1 do
+      assert (session:cancelorder ("BTC", "VTC", test_orders[i]))
+      table.remove (test_orders)
     end
   end,
 }
 
-utest.test_delay (700)
-utest.run (tests_pubapi)
-utest.run (tests_privapi)
+utest.run "poloniex_pubapi"
+utest.run ("poloniex_privapi", 500) -- ms
+utest.run_single (poloniex_privapi, "test_cancelorder")

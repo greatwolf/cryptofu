@@ -3,7 +3,7 @@ require 'pl.app'.require_here ".."
 local make_retry = require 'tools.retry'
 local utest = require 'unittest'
 
-local tests = 
+utest.group "retrywrap"
 {
   test_retryfunc = function ()
     local retry_count = 0
@@ -62,4 +62,4 @@ local tests =
   end,
 }
 
-utest.run (tests)
+utest.run "retrywrap"

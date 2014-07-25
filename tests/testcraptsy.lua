@@ -10,7 +10,7 @@ assert (session)
 local make_retry = require 'tools.retry'
 local session = make_retry (session, 3, "closed", "timeout")
 
-local tests_pubapi = 
+utest.group "craptsy_pubapi"
 {
   test_markethistory = function ()
     local r = assert (session:markethistory ("BTC", "LTC"))
@@ -35,7 +35,7 @@ local tests_pubapi =
   end
 }
 
-local tests_privapi = 
+utest.group "craptsy_privapi"
 {
   test_balance = function ()
     local r = session:balance ()
@@ -85,5 +85,5 @@ local tests_privapi =
   end,
 }
 
-utest.run (tests_pubapi)
-utest.run (tests_privapi)
+utest.run "craptsy_pubapi"
+utest.run "craptsy_privapi"

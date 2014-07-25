@@ -12,7 +12,7 @@ assert (session)
 local make_retry = require 'tools.retry'
 local session = make_retry (session, 20, "timeout", "response not from MintPal!")
 
-local tests_v2query = 
+utest.group "mintpal_v2query"
 {
   test_bogusmarket = function ()
     local r, errmsg = session:markethistory ("BTC", "MRO")
@@ -43,7 +43,8 @@ local tests_v2query =
   end,
 }
 
-local tests_webquery = 
+local test_orders = {}
+utest.group "mintpal_webquery"
 {
   test_balance = function ()
     local r = assert (session:balance ())
@@ -63,18 +64,19 @@ local tests_webquery =
     local r = assert (session:buy ("BTC", "CINNI", 0.000011, 10.001))
 
     dump (r)
+    table.insert (test_orders, r.orderNumber)
   end,
 
   test_sell = function ()
     local r = assert (session:sell ("BTC", "MINT", 0.015, 1))
 
     dump (r)
+    table.insert (test_orders, r.orderNumber)
   end,
 
   test_cancelorder = function ()
-    local orders = session:openorders ("BTC", "CinnI")
-    for _, each in ipairs (orders) do
-      dump (assert (session:cancelorder("BTC", "cinni", each.order_id)))
+    for i = #test_orders, 1, -1 do
+      dump (assert (session:cancelorder("BTC", "mint", test_orders[i])))
     end
   end,
 
@@ -86,5 +88,5 @@ local tests_webquery =
   end,
 }
 
-utest.run (tests_v2query)
-utest.run (tests_webquery)
+utest.run "mintpal_v2query"
+utest.run "mintpal_webquery"

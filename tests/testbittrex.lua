@@ -11,7 +11,7 @@ assert (session)
 local make_retry = require 'tools.retry'
 local session = make_retry (session, 3, "closed", "timeout")
 
-local tests = 
+utest.group "bittrex_api"
 {
   test_balance = function ()
     local r = session:balance ()
@@ -74,5 +74,4 @@ local tests =
   end
 }
 
-utest.test_delay (600)
-utest.run (tests)
+utest.run ("bittrex_api", 600) -- ms

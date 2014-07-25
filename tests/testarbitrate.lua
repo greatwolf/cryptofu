@@ -1,6 +1,8 @@
 require 'luarocks_path'
 require 'pl.app'.require_here ".."
-local arbitrate = require 'arbitrate'
+local arb_tool = require 'arbitrate'
+local arbitrate = arb_tool.arbitrate
+local makearb = arb_tool.makearb
 local utest = require 'unittest'
 
 local orderbook1 =
@@ -54,7 +56,7 @@ local orderbook2 =
   }
 }
 
-local tests = 
+utest.group "tests_arb"
 {
   test_arbitrate = function ()
     local r = arbitrate (orderbook1, orderbook2)
@@ -227,4 +229,47 @@ local tests =
   end
 }
 
-utest.run (tests)
+local makemock = function (orderbook, spy)
+  return function ()
+    return
+    {
+      __call = function (self, apikey) return self end,
+      orderbook = function (self, market1, market2)
+        spy.called_orderbook = true
+        return orderbook
+      end
+    }
+  end
+end
+
+local arbhandler_spy = {}
+local arbhandler = function (ctx)
+  arbhandler_spy.called_handler = true
+  arbhandler_spy.context = ctx
+end
+
+local mock1spy, mock2spy = {}, {}
+package.preload["exchange.mock1"] = makemock (orderbook1, mock1spy)
+package.preload["exchange.mock2"] = makemock (orderbook2, mock2spy)
+local arbmodule = makearb ('mock1', 'mock2', 'btc', 'ltc', arbhandler)
+arbmodule.main = coroutine.create (arbmodule.main)
+coroutine.resume (arbmodule.main)
+
+utest.group "tests_makearb"
+{
+  test_orderbookcall = function ()
+    assert (mock1spy.called_orderbook)
+    assert (mock2spy.called_orderbook)
+  end,
+
+  test_callbackparam = function ()
+    assert (arbhandler_spy.called_handler)
+    assert (arbhandler_spy.context[1]) -- arbitration data
+    assert (arbhandler_spy.context.mock1)
+    assert (arbhandler_spy.context.mock2)
+    assert (arbhandler_spy.context.log)
+  end
+}
+
+utest.run "tests_arb"
+utest.run "tests_makearb"
