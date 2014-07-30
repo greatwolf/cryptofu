@@ -11,44 +11,12 @@ assert (session)
 local make_retry = require 'tools.retry'
 local session = make_retry (session, 3, "closed", "timeout")
 
-utest.group "bittrex_api"
+utest.group "bittrex_pubapi"
 {
-  test_balance = function ()
-    local r = session:balance ()
+  test_bogusmarket = function ()
+    local r, errmsg = session:markethistory ("BTC", "MRO")
 
-    dump (r)
-    assert (r.BTC)
-  end,
-
-  test_tradehistory = function ()
-    local r = session:tradehistory ("BTC", "WC")
-
-    dump (r)
-  end,
-
-  test_buy = function ()
-    local r, errmsg = session:buy ("BTC", "LTC", 0.00015, 1)
-
-    assert (not r and errmsg == "INSUFFICIENT_FUNDS")
-  end,
-
-  test_sell = function ()
-    local r, errmsg = assert (session:sell("BTC", "VTC", 0.15, 0.01))
-
-    dump (r)
-  end,
-
-  test_cancelorder = function ()
-    local orders = session:openorders ("BTC", "VTC")
-    for _, order in ipairs (orders) do
-      assert (session:cancelorder ("BTC", "VTC", order.OrderUuid))
-    end
-  end,
-
-  test_openorders = function ()
-    local r = session:openorders ("BTC", "VTC")
-
-    dump (r)
+    assert (not r and errmsg == "INVALID_MARKET", errmsg)
   end,
 
   test_markethistory = function ()
@@ -74,4 +42,47 @@ utest.group "bittrex_api"
   end
 }
 
-utest.run ("bittrex_api", 600) -- ms
+local test_orders = {}
+utest.group "bittrex_privapi"
+{
+  test_balance = function ()
+    local r = session:balance ()
+
+    dump (r)
+    assert (r.BTC)
+  end,
+
+  test_tradehistory = function ()
+    local r = session:tradehistory ("BTC", "WC")
+
+    dump (r)
+  end,
+
+  test_buy = function ()
+    local r, errmsg = session:buy ("BTC", "LTC", 0.00015, 1)
+
+    assert (not r and errmsg == "INSUFFICIENT_FUNDS")
+  end,
+
+  test_sell = function ()
+    local r, errmsg = assert (session:sell("BTC", "VTC", 0.15, 0.01))
+
+    dump (r)
+    table.insert (test_orders, assert (r.orderNumber))
+  end,
+
+  test_cancelorder = function ()
+    for _, order in ipairs (test_orders) do
+      assert (session:cancelorder ("BTC", "VTC", order))
+    end
+  end,
+
+  test_openorders = function ()
+    local r = session:openorders ("BTC", "VTC")
+
+    dump (r)
+  end,
+}
+
+utest.run "bittrex_pubapi"
+utest.run ("bittrex_privapi", 400) -- ms

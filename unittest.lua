@@ -55,7 +55,7 @@ local utest = newproxy (true)
 local mt = getmetatable (utest)
 mt.__index = { group = group, run = run, run_single = run_single, }
 mt.__gc = function (self)
-  print ("\nTest Report:")
+  print ("\nHarness Summary:")
   print (("-"):rep (80))
   for _, each in ipairs (test_report) do
     print (each)
