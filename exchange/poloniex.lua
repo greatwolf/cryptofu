@@ -33,12 +33,13 @@ end
 local pol_privquery = function (self, cmd, parm)
   parm = parm or {}
   parm.command = cmd
-  parm.nonce = os.time() * 2
+  parm.nonce = self.nonce
   parm.currencyPair = parm.currencyPair and parm.currencyPair:upper()
 
   local post_data = urlencode_parm (parm)
   self.headers["content-length"] = #post_data
   self.headers.sign = crypto.hmac.digest ("sha512", post_data, self.secret)
+  self.nonce = self.nonce + 1
 
   return pol_query ("POST", "/tradingApi", self.headers, post_data)
 end
@@ -127,7 +128,7 @@ function poloniex_api:__call (t)
   {
     key = t.key, ["content-type"] = "application/x-www-form-urlencoded",
   }
-  return setmetatable({ headers = headers, secret = t.secret }, session_mt)
+  return setmetatable({ headers = headers, secret = t.secret, nonce = os.time() * 2 }, session_mt)
 end
 
 return setmetatable(poloniex_api, poloniex_api)

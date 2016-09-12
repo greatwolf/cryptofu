@@ -31,12 +31,13 @@ end
 local bittrex_privquery = function (self, cmd, parm)
   parm = parm or {}
   parm.apikey = self.key
-  parm.nonce = os.time()
+  parm.nonce = self.nonce
   parm.market = parm.market and parm.market:upper()
 
   local urlpath = cmd .. "?" .. urlencode_parm (parm)
   local uri = url .. apiv .. urlpath
   local headers = { apisign = crypto.hmac.digest ("sha512", uri, self.secret) }
+  self.nonce = self.nonce + 1
 
   return bittrex_query ("GET", urlpath, headers)
 end
@@ -119,7 +120,7 @@ local session_mt = { __index = bittrex_api }
 function bittrex_api:__call (t)
   assert (t and t.key and t.secret, "No api key/secret parameter given.")
 
-  return setmetatable({ key = t.key, secret = t.secret }, session_mt)
+  return setmetatable({ key = t.key, secret = t.secret, nonce = os.time() }, session_mt)
 end
 
 return setmetatable(bittrex_api, bittrex_api)
