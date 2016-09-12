@@ -1,4 +1,3 @@
-require 'luarocks_path'
 require 'pl.app'.require_here ".."
 local utest = require 'unittest'
 local d = require 'pl.pretty'.dump

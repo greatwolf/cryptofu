@@ -1,4 +1,3 @@
-require 'luarocks_path'
 require 'pl.app'.require_here ".."
 local logbuilder = require 'tools.logger'
 local utest = require 'unittest'

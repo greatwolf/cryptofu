@@ -1,4 +1,3 @@
-require 'luarocks_path'
 local log = require 'tools.logger' ()
 local dispatcher = require 'dispatcher'
 local config = "config.lua"

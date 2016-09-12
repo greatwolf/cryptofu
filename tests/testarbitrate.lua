@@ -1,4 +1,3 @@
-require 'luarocks_path'
 require 'pl.app'.require_here ".."
 local arb_tool = require 'arbitrate'
 local arbitrate = arb_tool.arbitrate

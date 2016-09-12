@@ -1,4 +1,3 @@
-require 'luarocks_path'
 require 'pl.app'.require_here ".."
 local make_retry = require 'tools.retry'
 local utest = require 'unittest'
