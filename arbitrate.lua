@@ -4,7 +4,7 @@ local isempty = function (t)
   return not next (t)
 end
 
-local function compute_arb (orderbook1, orderbook2)
+local compute_arb = function (orderbook1, orderbook2)
 --[[ arbitration algorithm
 orderbook 1               orderbook 2
 buy                       sell
@@ -44,10 +44,10 @@ final output:
   buy 26.00904372 @0.02014990
   sell 26.00904372 @0.02020000
 --]]
-  local ask_amounts = tablex.icopy ({}, orderbook2.sell.amount)
-  local bid_amounts = tablex.icopy ({}, orderbook1.buy.amount)
+  local ask_amounts = tablex.icopy ({}, orderbook2.asks.amount)
+  local bid_amounts = tablex.icopy ({}, orderbook1.bids.amount)
 
-  local sells, buys = orderbook2.sell.price, orderbook1.buy.price
+  local sells, buys = orderbook2.asks.price, orderbook1.bids.price
   local ask_index, bid_index = 1, 1
   local r = { buy  = orderbook2, sell = orderbook1, }
   while sells[ask_index] and 
@@ -63,19 +63,46 @@ final output:
   return #r > 0 and r
 end
 
-local function arbitrate (orderbook1, orderbook2)
-  if not isempty (orderbook1.buy.price) and
-     not isempty (orderbook2.sell.price) and
-     orderbook2.sell.price[1] < orderbook1.buy.price[1] then
+local arbitrate = function (orderbook1, orderbook2)
+  if not isempty (orderbook1.bids.price) and
+     not isempty (orderbook2.asks.price) and
+     orderbook2.asks.price[1] < orderbook1.bids.price[1] then
     return compute_arb (orderbook1, orderbook2)
   end
 
-  if not isempty (orderbook2.buy.price) and
-     not isempty (orderbook1.sell.price) and
-     orderbook1.sell.price[1] < orderbook2.buy.price[1] then
+  if not isempty (orderbook2.bids.price) and
+     not isempty (orderbook1.asks.price) and
+     orderbook1.asks.price[1] < orderbook2.bids.price[1] then
     return compute_arb (orderbook2, orderbook1)
   end
   return false
 end
 
-return arbitrate
+local makearb = function (apiname1, apiname2, market1, market2, arbhandler_callback)
+  local log = require 'tools.logger' (apiname1 .. "<->" .. apiname2 .. " " .. market1 .. "/" .. market2)
+  local api1 = require ("exchange." .. apiname1)
+  local api2 = require ("exchange." .. apiname2)
+  local main = function ()
+    local o1, o2
+    while true do
+      local noerr, errmsg = pcall (function ()
+          o1 = api1:orderbook (market1, market2)
+          o2 = api2:orderbook (market1, market2)
+
+        local res = arbitrate (o1, o2)
+        if res then
+          res.buy  = res.buy == o1 and apiname1 or apiname2
+          res.sell = res.sell == o2 and apiname2 or apiname1
+          arbhandler_callback { res, [apiname1] = api1, [apiname2] = api2, log = log}
+        end
+      end)
+      log._if (not noerr, errmsg)
+      if not noerr and errmsg:match "wantread" then break end
+      coroutine.yield ()
+    end
+  end
+
+  return { main = main, interval = 4 }
+end
+
+return { arbitrate = arbitrate, makearb = makearb }

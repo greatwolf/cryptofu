@@ -27,17 +27,21 @@ utest.group "bittrex_pubapi"
   test_orderbook = function ()
     local r = session:orderbook ("BTC", "LTC")
 
-    assert (r.buy and r.sell)
-    assert (r.buy.price and r.sell.price)
-    assert (r.buy.amount and r.sell.amount)
+    assert (r.bids and r.asks)
+    assert (r.bids.price and r.asks.price)
+    assert (r.bids.amount and r.asks.amount)
+    assert (type(r.asks.amount[1]) == "number")
+    assert (type(r.asks.price[1])  == "number")
+    assert (type(r.bids.amount[1]) == "number")
+    assert (type(r.bids.price[1])  == "number")
   end,
 
   test_mixcasequery = function ()
     local r = session:orderbook ("BtC", "xmR")
 
-    assert (r.buy and r.sell)
-    assert (r.buy.price and r.sell.price)
-    assert (r.buy.amount and r.sell.amount)
+    assert (r.bids and r.asks)
+    assert (r.bids.price and r.asks.price)
+    assert (r.bids.amount and r.asks.amount)
   end
 }
 

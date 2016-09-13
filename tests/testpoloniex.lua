@@ -27,16 +27,21 @@ utest.group "poloniex_pubapi"
   test_orderbook = function ()
     local r = session:orderbook ("BTC", "LTC")
 
-    assert (r.sell.amount and r.buy.amount)
-    assert (r.sell.price and r.buy.price)
+    assert(r.bids and r.asks)
+    assert (r.asks.amount and r.bids.amount)
+    assert (r.asks.price and r.bids.price)
+    assert (type(r.asks.amount[1]) == "number")
+    assert (type(r.asks.price[1])  == "number")
+    assert (type(r.bids.amount[1]) == "number")
+    assert (type(r.bids.price[1])  == "number")
   end,
 
   test_mixcasequery = function ()
     local r = session:orderbook ("BtC", "xmR")
 
-    assert (r.buy and r.sell)
-    assert (r.sell.amount and r.buy.amount)
-    assert (r.sell.price and r.buy.price)
+    assert (r.bids and r.asks)
+    assert (r.asks.amount and r.bids.amount)
+    assert (r.asks.price and r.bids.price)
   end
 }
 

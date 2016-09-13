@@ -6,7 +6,7 @@ local utest = require 'unittest'
 
 local orderbook1 =
 {
-  buy =
+  bids =
   {
     price = 
     {
@@ -25,12 +25,12 @@ local orderbook1 =
       3.07442252,
     }
   },
-  sell = { price = {0.02050001,}, amount = {0.31086,} }
+  asks = { price = {0.02050001,}, amount = {0.31086,} }
 }
 local orderbook2 =
 {
-  buy = { price = {0.01995,}, amount = {0.016,} },
-  sell =
+  bids = { price = {0.01995,}, amount = {0.016,} },
+  asks =
   {
     price = 
     {
@@ -62,15 +62,15 @@ utest.group "tests_arb"
     assert (r)
     assert (r.buy  == orderbook2)
     assert (r.sell == orderbook1)
-    assert (r[1].buyprice  == orderbook2.sell.price[1])
-    assert (r[1].sellprice == orderbook1.buy.price[1])
-    assert (r[1].amount == orderbook1.buy.amount[1])
-    assert (r[2].buyprice  == orderbook2.sell.price[1])
-    assert (r[2].sellprice == orderbook1.buy.price[2])
-    assert (r[2].amount == orderbook1.buy.amount[2])
-    assert (r[3].buyprice  == orderbook2.sell.price[1])
-    assert (r[3].sellprice == orderbook1.buy.price[3])
-    assert (r[3].amount == orderbook1.buy.amount[3])
+    assert (r[1].buyprice  == orderbook2.asks.price[1])
+    assert (r[1].sellprice == orderbook1.bids.price[1])
+    assert (r[1].amount == orderbook1.bids.amount[1])
+    assert (r[2].buyprice  == orderbook2.asks.price[1])
+    assert (r[2].sellprice == orderbook1.bids.price[2])
+    assert (r[2].amount == orderbook1.bids.amount[2])
+    assert (r[3].buyprice  == orderbook2.asks.price[1])
+    assert (r[3].sellprice == orderbook1.bids.price[3])
+    assert (r[3].amount == orderbook1.bids.amount[3])
   end,
 
   test_reverse_arbitrate = function ()
@@ -78,27 +78,27 @@ utest.group "tests_arb"
     assert (r)
     assert (r.buy  == orderbook2)
     assert (r.sell == orderbook1)
-    assert (r[1].buyprice  == orderbook2.sell.price[1])
-    assert (r[1].sellprice == orderbook1.buy.price[1])
-    assert (r[1].amount == orderbook1.buy.amount[1])
-    assert (r[2].buyprice  == orderbook2.sell.price[1])
-    assert (r[2].sellprice == orderbook1.buy.price[2])
-    assert (r[2].amount == orderbook1.buy.amount[2])
-    assert (r[3].buyprice  == orderbook2.sell.price[1])
-    assert (r[3].sellprice == orderbook1.buy.price[3])
-    assert (r[3].amount == orderbook1.buy.amount[3])
+    assert (r[1].buyprice  == orderbook2.asks.price[1])
+    assert (r[1].sellprice == orderbook1.bids.price[1])
+    assert (r[1].amount == orderbook1.bids.amount[1])
+    assert (r[2].buyprice  == orderbook2.asks.price[1])
+    assert (r[2].sellprice == orderbook1.bids.price[2])
+    assert (r[2].amount == orderbook1.bids.amount[2])
+    assert (r[3].buyprice  == orderbook2.asks.price[1])
+    assert (r[3].sellprice == orderbook1.bids.price[3])
+    assert (r[3].amount == orderbook1.bids.amount[3])
   end,
 
   test_emptybook_arbitrate = function ()
-    local r = arbitrate ({buy = {price ={}, amount = {}}, sell = {price ={}, amount = {}}},
-                         {buy = {price ={}, amount = {}}, sell = {price ={}, amount = {}}})
+    local r = arbitrate ({bids = {price ={}, amount = {}}, asks = {price ={}, amount = {}}},
+                         {bids = {price ={}, amount = {}}, asks = {price ={}, amount = {}}})
     assert (not r)
   end,
 
   test_no_arbitrate = function ()
     local orderbook1 =
     {
-      buy =
+      bids =
       {
         price = 
         {
@@ -111,12 +111,12 @@ utest.group "tests_arb"
           3.07442252,
         }
       },
-      sell = { price = {0.02050001,}, amount = {0.31086,} }
+      asks = { price = {0.02050001,}, amount = {0.31086,} }
     }
     local orderbook2 =
     {
-      buy = { price = {0.01995,}, amount = {0.016,} },
-      sell =
+      bids = { price = {0.01995,}, amount = {0.016,} },
+      asks =
       {
         price = 
         {
@@ -137,7 +137,7 @@ utest.group "tests_arb"
   test_equalqty_arbitrate = function ()
     local orderbook1 = 
     {
-      buy =
+      bids =
       {
         price =
         {
@@ -156,11 +156,11 @@ utest.group "tests_arb"
           5,
         }
       },
-      sell = { price = {10}, amount = {1} }
+      asks = { price = {10}, amount = {1} }
     }
     local orderbook2 =
     {
-      sell =
+      asks =
       {
         price =
         {
@@ -177,36 +177,36 @@ utest.group "tests_arb"
           3,
         }
       },
-      buy = { price = {2}, amount = {1} }
+      bids = { price = {2}, amount = {1} }
     }
     local r = arbitrate (orderbook1, orderbook2)
     assert (r)
     assert (r.buy == orderbook2 and r.sell == orderbook1)
-    assert (r[1].buyprice == orderbook2.sell.price[1] and 
-            r[1].sellprice == orderbook1.buy.price[1] and 
+    assert (r[1].buyprice == orderbook2.asks.price[1] and 
+            r[1].sellprice == orderbook1.bids.price[1] and 
             r[1].amount == 5)
-    assert (r[2].buyprice == orderbook2.sell.price[1] and 
-            r[2].sellprice == orderbook1.buy.price[2] and 
+    assert (r[2].buyprice == orderbook2.asks.price[1] and 
+            r[2].sellprice == orderbook1.bids.price[2] and 
             r[2].amount == 5)
-    assert (r[3].buyprice == orderbook2.sell.price[2] and 
-            r[3].sellprice == orderbook1.buy.price[3] and 
+    assert (r[3].buyprice == orderbook2.asks.price[2] and 
+            r[3].sellprice == orderbook1.bids.price[3] and 
             r[3].amount == 5)
   end,
 
   test_thinbuy_arbitrate = function ()
     local orderbook1 =
     {
-      buy =
+      bids =
       {
         price  = {   8, 7.11, },
         amount = { 0.5, 1.23, }
       },
-      sell = { price = {}, amount = {} }
+      asks = { price = {}, amount = {} }
     }
     local orderbook2 =
     {
-      buy = { price = {}, amount = {} },
-      sell =
+      bids = { price = {}, amount = {} },
+      asks =
       {
         price  = {    2, 3, 3.6, 4.8, },
         amount = { 0.23, 4, 1.2, 0.6, }

@@ -104,8 +104,9 @@ function bittrex_api:orderbook (market1, market2)
   if not r.success then return nil, r.message end
   r = r.result
 
-  r.buy  = map_transpose (r.buy, { Rate = "price", Quantity = "amount" })
-  r.sell = map_transpose (r.sell, { Rate = "price", Quantity = "amount" })
+  r.bids = map_transpose (r.buy, { Rate = "price", Quantity = "amount" })
+  r.asks = map_transpose (r.sell, { Rate = "price", Quantity = "amount" })
+  r.buy, r.sell = nil
 
   return r
 end

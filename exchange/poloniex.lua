@@ -102,15 +102,17 @@ function poloniex_api:orderbook (market1, market2)
   local r = pol_pubquery (self, "returnOrderBook", {currencyPair = market1 .. "_" .. market2})
   if r.error then return nil, r.error end
 
-  r.buy  = tablex.zip (unpack (r.bids))
-  r.sell = tablex.zip (unpack (r.asks))
+  r.bids  = tablex.zip (unpack (r.bids))
+  r.asks = tablex.zip (unpack (r.asks))
   -- price table at index 1 and amount table at index 2
   -- connect them to the right field name and remove old reference
-  r.buy.price,   r.buy[1] = r.buy[1], nil
-  r.buy.amount,  r.buy[2] = r.buy[2], nil
-  r.sell.price,  r.sell[1] = r.sell[1], nil
-  r.sell.amount, r.sell[2] = r.sell[2], nil
-  r.bids, r.asks = nil
+  r.bids.price,  r.bids[1] = r.bids[1], nil
+  r.bids.amount, r.bids[2] = r.bids[2], nil
+  r.asks.price,  r.asks[1] = r.asks[1], nil
+  r.asks.amount, r.asks[2] = r.asks[2], nil
+  tablex.transform(tonumber, r.bids.price)
+  tablex.transform(tonumber, r.asks.price)
+
   return r
 end
 
