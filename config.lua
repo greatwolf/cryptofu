@@ -11,19 +11,7 @@ apikeys =
     secret = "",
   },
 
-  mintpal = 
-  {
-    session_id = "",
-    incap_ses_210_152968 = "",
-  },
-
   bittrex = 
-  {
-    key = "",
-    secret = "",
-  },
-
-  craptsy = 
   {
     key = "",
     secret = "",
