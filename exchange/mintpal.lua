@@ -1,9 +1,10 @@
-local https =           require 'ssl.https'
-local json =            require 'dkjson'
-local imap =            require 'pl.tablex'.imap
-local update =          require 'pl.tablex'.update
-local map_transpose =   require 'tools.util'.map_transpose
-local urlencode_parm =  require 'tools.util'.urlencode_parm
+local https           = require 'ssl.https'
+local json            = require 'dkjson'
+local imap            = require 'pl.tablex'.imap
+local update          = require 'pl.tablex'.update
+local map_transpose   = require 'tools.util'.map_transpose
+local urlencode_parm  = require 'tools.util'.urlencode_parm
+local z               = require 'zlib' -- for gzip
 
 local url, apiurl = "https://www.mintpal.com", "https://api.mintpal.com"
 local tradefee = 0.15 / 100
@@ -57,17 +58,22 @@ mp_query = function (method, headers, url, path, data)
       source = data and ltn12.source.string (data),
       sink = ltn12.sink.table (resp),
     }
-  return assert(r, c) and table.concat(resp)
+  resp = assert(r, c) and table.concat(resp)
+  if h["content-encoding"] == "gzip" then
+    resp = z.inflate (resp):read "*a"
+  end
+  return resp
 end
 
 mp_apiv2query = function (method, urlpath, data)
-  local r = mp_query (method, {connection = "keep-alive"}, apiurl .. "/v2", urlpath, data)
+  local post_headers = {connection = "keep-alive", ["accept-encoding"] = "gzip"}
+  local r = mp_query (method, post_headers, apiurl .. "/v2", urlpath, data)
 
   return assert (json.decode (r))
 end
 
 mp_webquery = function (sessionheaders, method, path, data, extraheaders)
-  local post_headers = update ({}, sessionheaders)
+  local post_headers = update ({connection = "keep-alive", ["accept-encoding"] = "gzip"}, sessionheaders)
   if extraheaders then
     post_headers = update (post_headers, extraheaders)
   end
