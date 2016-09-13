@@ -60,7 +60,7 @@ utest.group "bittrex_privapi"
   test_buy = function ()
     local r, errmsg = session:buy ("BTC", "LTC", 0.00015, 1)
 
-    assert (not r and errmsg == "INSUFFICIENT_FUNDS")
+    assert (not r and errmsg == "INSUFFICIENT_FUNDS", errmsg)
   end,
 
   test_sell = function ()
