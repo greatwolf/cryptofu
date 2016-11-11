@@ -61,9 +61,10 @@ local make_retry = function (obj, retry_limit, ...)
   local wrapper = {}
   local mt = {}
   mt.__index = function (t, k)
-    t[k] = obj[k]
-    if type (t[k]) == "function" then
-      t[k] = retry_wrapmethod (wrapper, obj, t[k], reasons, retry_limit)
+    local lvalue = obj[k]
+    t[k] = lvalue
+    if type (lvalue) == "function" then
+      t[k] = retry_wrapmethod (wrapper, obj, lvalue, reasons, retry_limit)
     end
     return rawget (t, k)
   end

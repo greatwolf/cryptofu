@@ -31,6 +31,20 @@ utest.group "retrywrap"
     assert (r2 == 2)
   end,
 
+  test_retrystackoverflow = function ()
+    local count = 0
+    local mt = {}
+    mt.__index = function (t, k)
+      if k == "badfunction" then count = count + 1 end
+      return nil
+    end
+    local t = setmetatable({}, mt)
+
+    local t_wrapped = make_retry (t, 2, "an error")
+    assert  (not pcall (t_wrapped.badfunction))
+    assert (count == 1)
+  end,
+
   test_retrymultireason = function ()
     local r = 0
     local t =
