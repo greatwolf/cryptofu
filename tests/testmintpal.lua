@@ -1,5 +1,5 @@
 require 'pl.app'.require_here ".."
-local utest = require 'unittest'
+local utest = require 'tools.unittest'
 local d = require 'pl.pretty'.dump
 dump = function (t) return d (t) end
 

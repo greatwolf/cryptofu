@@ -2,7 +2,7 @@ require 'pl.app'.require_here ".."
 local arb_tool = require 'arbitrate'
 local arbitrate = arb_tool.arbitrate
 local makearb = arb_tool.makearb
-local utest = require 'unittest'
+local utest = require 'tools.unittest'
 
 local orderbook1 =
 {

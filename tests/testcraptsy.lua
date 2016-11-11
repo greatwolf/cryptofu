@@ -1,5 +1,5 @@
 require 'pl.app'.require_here ".."
-local utest = require 'unittest'
+local utest = require 'tools.unittest'
 local dump = require 'pl.pretty'.dump
 
 local keys = require 'tests.api_testkeys'.craptsy

@@ -15,18 +15,16 @@ end
 
 local function run_single (testgroup, testname)
   assert (testgroup[testname])
-  io.write ("  Running " .. testname .. "... ")
+  io.write (string.format ("  Running %-52s", testname .. "... "))
   local start = clock()
   local noerr, errmsg = pcall (testgroup[testname])
   local elapse = clock() - start
   elapse = elapse < 2 and string.format ("%.2fms", elapse * 1000)
                        or string.format ("%.2fs", elapse)
 
-  io.write (elapse)
-  if noerr then
-    print " ok"
-  else
-    print (" fail!\n", errmsg)
+  io.write (string.format ("[%s] %s\n", noerr and "ok" or "failed", elapse))
+  if not noerr then
+    print ('\n', errmsg, '\n')
   end
   return noerr
 end
@@ -46,7 +44,7 @@ local function run (testgroup_name, delay)
   elapse = elapse < 2 and string.format ("%.2fms", elapse * 1000)
                        or string.format ("%.2fs", elapse)
 
-  local result = string.format ("  %16s --> %d Passed, %d Failed, Total %d, %s",
+  local result = string.format ("  %-24s --> %d Passed, %d Failed, Total %d, %s",
                                 testgroup_name, testcount - testfail, testfail, testcount, elapse)
   table.insert (test_report, result)
 end
