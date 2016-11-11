@@ -52,53 +52,14 @@ local pol_pubquery = function (self, cmd, parm)
   return pol_query ("GET", "/public?" .. urlencode_parm (parm))
 end
 
-local poloniex_api = {}
-function poloniex_api:balance ()
-  local r = pol_privquery (self, "returnBalances")
-  if r.error then return nil, r.error end
-
-  local balances = r
-  for code, balance in pairs (balances) do
-    balances[code] = tonumber (balance)
-    if balances[code] == 0 then
-      balances[code] = nil
-    end
-  end
-  balances.BTC = balances.BTC or 0
-  return balances
-end
-
-function poloniex_api:tradehistory (market1, market2)
-  local r = pol_privquery (self, "returnTradeHistory", {currencyPair = market1 .. "_" .. market2})
-  if r.error then return nil, r.error end
-  return r
-end
-
-function poloniex_api:buy (market1, market2, rate, quantity)
-  local r = pol_privquery (self, "buy", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
-  if r.error then return nil, r.error end
-  return r
-end
-
-function poloniex_api:sell (market1, market2, rate, quantity)
-  local r = pol_privquery (self, "sell", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
-  if r.error then return nil, r.error end
-  return r
-end
-
-function poloniex_api:cancelorder (market1, market2, ordernumber)
-  local r = pol_privquery (self, "cancelOrder", {currencyPair = market1 .. "_" .. market2, orderNumber = ordernumber})
-  if r.error then return nil, r.error end
-  return r
-end
-
-function poloniex_api:markethistory (market1, market2)
+local poloniex_pubapi = {}
+function poloniex_pubapi:markethistory (market1, market2)
   local r = pol_pubquery (self, "returnTradeHistory", {currencyPair = market1 .. "_" .. market2})
   if r.error then return nil, r.error end
   return r
 end
 
-function poloniex_api:orderbook (market1, market2)
+function poloniex_pubapi:orderbook (market1, market2)
   local r = pol_pubquery (self, "returnOrderBook", {currencyPair = market1 .. "_" .. market2})
   if r.error then return nil, r.error end
 
@@ -116,14 +77,66 @@ function poloniex_api:orderbook (market1, market2)
   return r
 end
 
-function poloniex_api:openorders (market1, market2)
+function poloniex_pubapi:lendingbook(currency)
+  local r = pol_pubquery (self, "returnLoanOrders", {currency = currency})
+  if r.error then return nil, r.error end
+  return r
+end
+
+local poloniex_privapi = { __index = poloniex_pubapi }
+function poloniex_privapi:balance ()
+  local r = pol_privquery (self, "returnBalances")
+  if r.error then return nil, r.error end
+
+  local balances = r
+  for code, balance in pairs (balances) do
+    balances[code] = tonumber (balance)
+    if balances[code] == 0 then
+      balances[code] = nil
+    end
+  end
+  balances.BTC = balances.BTC or 0
+  return balances
+end
+
+function poloniex_privapi:tradehistory (market1, market2, start_period, stop_period)
+  local parm =
+    {
+      currencyPair = market1 .. "_" .. market2,
+      start = start_period or 1,
+      ['end'] = stop_period
+    }
+  local r = pol_privquery (self, "returnTradeHistory", parm)
+  if r.error then return nil, r.error end
+  return r
+end
+
+function poloniex_privapi:buy (market1, market2, rate, quantity)
+  local r = pol_privquery (self, "buy", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
+  if r.error then return nil, r.error end
+  return r
+end
+
+function poloniex_privapi:sell (market1, market2, rate, quantity)
+  local r = pol_privquery (self, "sell", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
+  if r.error then return nil, r.error end
+  return r
+end
+
+function poloniex_privapi:cancelorder (market1, market2, ordernumber)
+  local r = pol_privquery (self, "cancelOrder", {currencyPair = market1 .. "_" .. market2, orderNumber = ordernumber})
+  if r.error then return nil, r.error end
+  return r
+end
+
+function poloniex_privapi:openorders (market1, market2)
   local r = pol_privquery (self, "returnOpenOrders", {currencyPair = market1 .. "_" .. market2})
   if r.error then return nil, r.error end
   return r
 end
 
-local session_mt = { __index = poloniex_api }
-function poloniex_api:__call (t)
+local session_mt = { __index = poloniex_privapi }
+function poloniex_pubapi:__call (t)
   assert (t and t.key and t.secret, "No api key/secret parameter given.")
 
   local headers =
@@ -133,4 +146,5 @@ function poloniex_api:__call (t)
   return setmetatable({ headers = headers, secret = t.secret, nonce = os.time() * 2 }, session_mt)
 end
 
-return setmetatable(poloniex_api, poloniex_api)
+setmetatable(poloniex_privapi, poloniex_privapi)
+return setmetatable(poloniex_pubapi, poloniex_pubapi)

@@ -8,20 +8,20 @@ local session = require 'exchange.bittrex' { key = keys.key, secret = keys.secre
 assert (session)
 
 local make_retry = require 'tools.retry'
-local session = make_retry (session, 3, "closed", "timeout")
+session = make_retry (session, 3, "closed", "timeout")
 
 utest.group "bittrex_pubapi"
 {
   test_bogusmarket = function ()
-    local r, errmsg = session:markethistory ("BTC", "MRO")
+    local r, errmsg = session:markethistory ("BTC", "___")
 
     assert (not r and errmsg == "INVALID_MARKET", errmsg)
   end,
 
   test_markethistory = function ()
-    local r = session:markethistory ("BTC", "LTC")
-
-    assert (r)
+    local r = assert (session:markethistory ("BTC", "LTC"))
+    
+    assert (#r > 0)
   end,
 
   test_orderbook = function ()
@@ -30,6 +30,7 @@ utest.group "bittrex_pubapi"
     assert (r.bids and r.asks)
     assert (r.bids.price and r.asks.price)
     assert (r.bids.amount and r.asks.amount)
+    assert (r.bids.price[1] < r.asks.price[1])
     assert (type(r.asks.amount[1]) == "number")
     assert (type(r.asks.price[1])  == "number")
     assert (type(r.bids.amount[1]) == "number")
@@ -49,43 +50,51 @@ local test_orders = {}
 utest.group "bittrex_privapi"
 {
   test_balance = function ()
-    local r = session:balance ()
+    local r = assert (session:balance ())
 
-    dump (r)
-    assert (r.BTC)
+    assert (r.BTC and type (r.BTC) == "number")
   end,
 
   test_tradehistory = function ()
-    local r = session:tradehistory ("BTC", "WC")
-
-    dump (r)
+    local r = assert (session:tradehistory ("BTC", "VTC"))
   end,
 
   test_buy = function ()
-    local r, errmsg = session:buy ("BTC", "LTC", 0.00015, 1)
+    local r, errmsg = session:buy ("BTC", "LTC", 0.000015, 34)
 
-    assert (not r and errmsg == "INSUFFICIENT_FUNDS", errmsg)
+    assert (errmsg == "INSUFFICIENT_FUNDS" or (r and r.orderNumber), errmsg)
+    table.insert (test_orders, r and r.orderNumber)
   end,
 
   test_sell = function ()
-    local r, errmsg = assert (session:sell("BTC", "VTC", 0.15, 0.01))
+    local r, errmsg = assert (session:sell("BTC", "VTC", 1.5, 0.01))
 
-    dump (r)
-    table.insert (test_orders, assert (r.orderNumber))
+    assert (errmsg == "INSUFFICIENT_FUNDS" or (r and r.orderNumber), errmsg)
+    table.insert (test_orders, r and r.orderNumber)
   end,
+}
 
-  test_cancelorder = function ()
-    for _, order in ipairs (test_orders) do
-      assert (session:cancelorder ("BTC", "VTC", order))
-    end
-  end,
-
+utest.group "bittrex_orderlist"
+{
   test_openorders = function ()
-    local r = session:openorders ("BTC", "VTC")
+    local r = assert (session:openorders ("BTC", "VTC"))
 
-    dump (r)
+    assert (type(r) == "table")
+    assert (#r > 0)
+  end,
+}
+
+utest.group "bittrex_cancels"
+{
+  test_cancelorder = function ()
+    for i = #test_orders, 1, -1 do
+      assert (session:cancelorder ("BTC", "VTC", test_orders[i]))
+      table.remove (test_orders)
+    end
   end,
 }
 
 utest.run "bittrex_pubapi"
 utest.run ("bittrex_privapi", 400) -- ms
+utest.run "bittrex_orderlist"
+utest.run "bittrex_cancels"
