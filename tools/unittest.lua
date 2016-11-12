@@ -4,8 +4,13 @@ local print, pcall = print, pcall
 ffi.cdef [[void Sleep (int ms);]]
 local Sleep = ffi.C.Sleep
 
+local function pretty_timer (ms)
+  return ms < 2 and string.format ("%.2f msecs", ms * 1000)
+                 or string.format ("%.2f secs", ms)
+end
+
 local test_harness = {}
-local test_report = {}
+local test_report = { totalcount = 0, totalfail = 0, totalelapse = 0 }
 local function group (groupname)
   return function (t)
     test_harness[groupname] = t
@@ -19,8 +24,7 @@ local function run_single (testgroup, testname)
   local start = clock()
   local noerr, errmsg = pcall (testgroup[testname])
   local elapse = clock() - start
-  elapse = elapse < 2 and string.format ("%.2fms", elapse * 1000)
-                       or string.format ("%.2fs", elapse)
+  elapse = pretty_timer (elapse)
 
   io.write (string.format ("[%s] %s\n", noerr and "ok" or "failed", elapse))
   if not noerr then
@@ -41,12 +45,13 @@ local function run (testgroup_name, delay)
     testcount = testcount + 1
     Sleep (delay or 0)
   end
-  elapse = elapse < 2 and string.format ("%.2fms", elapse * 1000)
-                       or string.format ("%.2fs", elapse)
 
-  local result = string.format ("  %-24s --> %d Passed, %d Failed, Total %d, %s",
-                                testgroup_name, testcount - testfail, testfail, testcount, elapse)
+  local result = string.format ("  %-24s --> %3d Passed, %3d Failed, Total %3d, %s",
+                                testgroup_name, testcount - testfail, testfail, testcount, pretty_timer (elapse))
   table.insert (test_report, result)
+  test_report.totalcount  = test_report.totalcount + testcount
+  test_report.totalfail   = test_report.totalfail + testfail
+  test_report.totalelapse = test_report.totalelapse + elapse
 end
 
 local utest = newproxy (true)
@@ -55,9 +60,13 @@ mt.__index = { group = group, run = run, run_single = run_single, }
 mt.__gc = function (self)
   print ("\nHarness Summary:")
   print (("-"):rep (80))
-  for _, each in ipairs (test_report) do
-    print (each)
-  end
+  table.foreachi (test_report, function (_, v) print (v) end)
+
+  local fail, count = test_report.totalfail, test_report.totalcount
+  local elapse      = test_report.totalelapse
+  io.write ((" "):rep (27), ("="):rep (53))
+  io.write ((" "):rep (31), string.format ("%3d Passed, %3d Failed, Total %3d, %s",
+                                           count - fail, fail, count, pretty_timer (elapse)))
 end
 
 return utest
