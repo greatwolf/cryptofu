@@ -39,10 +39,20 @@ local function map_transpose (t, rename)
   return transposed
 end
 
+-- Monotonically incrementing nonce
+-- every call to new_nonce returns a 
+-- nonce value higher than the previous call
+local nonce
+local function new_nonce (init_time)
+  nonce = (nonce or init_time or os.time() * 2) + 1
+  return nonce
+end
+
 local _M = 
 {
   urlencode_parm = urlencode_parm,
   map_transpose = map_transpose,
+  new_nonce     = new_nonce,
 }
 
 return _M

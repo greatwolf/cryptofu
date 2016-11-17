@@ -20,13 +20,13 @@ end
 
 local function run_single (testgroup, testname)
   assert (testgroup[testname])
-  io.write (string.format ("  Running %-52s", testname .. "... "))
+  io.write (string.format ("  Running %-48s", testname .. "... "))
   local start = clock()
   local noerr, errmsg = pcall (testgroup[testname])
   local elapse = clock() - start
   elapse = pretty_timer (elapse)
 
-  io.write (string.format ("[%s] %s\n", noerr and "ok" or "failed", elapse))
+  io.write (string.format ("[%s] %s\n", noerr and "pass" or "failed", elapse))
   if not noerr then
     print ('\n', errmsg, '\n')
   end
