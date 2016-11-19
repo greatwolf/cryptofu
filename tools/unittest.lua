@@ -1,8 +1,6 @@
-local ffi = require 'ffi'
+local sleep = require 'tools.sleep'
 local clock = os.clock
 local print, pcall = print, pcall
-ffi.cdef [[void Sleep (int ms);]]
-local Sleep = ffi.C.Sleep
 
 local function pretty_timer (ms)
   return ms < 2 and string.format ("%.2f msecs", ms * 1000)
@@ -43,7 +41,7 @@ local function run (testgroup_name, delay)
     if not run_single (testgroup, testname) then testfail = testfail + 1 end
     elapse = clock() - start + elapse
     testcount = testcount + 1
-    Sleep (delay or 0)
+    sleep (delay or 0)
   end
 
   local result = string.format ("  %-24s --> %3d Passed, %3d Failed, Total %3d, %s",
