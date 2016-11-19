@@ -39,20 +39,27 @@ local function map_transpose (t, rename)
   return transposed
 end
 
--- Monotonically incrementing nonce
--- every call to new_nonce returns a 
--- nonce value higher than the previous call
-local nonce
-local function new_nonce (init_time)
-  nonce = (nonce or init_time or os.time() * 2) + 1
-  return nonce
+-- Monotonically incrementing nonce every call to
+-- new_nonce returns a nonce value higher than
+-- the previous call.
+-- Use a later date as epoch so more of the
+-- 32bit int space can be used before it wraps
+local epoch      = os.time { year = 2010, month = 1, day = 1 }
+local now        = function () return os.time () - epoch end
+local next_nonce = now() * 2
+local function get_nonce (init_time)
+  if init_time then
+    next_nonce = init_time < 0 and (now() * 2) or init_time
+  end
+  next_nonce = next_nonce + 1
+  return next_nonce
 end
 
 local _M = 
 {
   urlencode_parm = urlencode_parm,
   map_transpose = map_transpose,
-  new_nonce     = new_nonce,
+  nonce         = get_nonce,
 }
 
 return _M

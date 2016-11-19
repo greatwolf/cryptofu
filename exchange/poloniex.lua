@@ -3,6 +3,7 @@ local crypto         = require 'crypto'
 local json           = require 'dkjson'
 local tablex         = require 'pl.tablex'
 local urlencode_parm = require 'tools.util'.urlencode_parm
+local nonce          = require 'tools.util'.nonce
 local z              = require 'zlib' -- for gzip
 
 local url = "https://poloniex.com"
@@ -26,25 +27,25 @@ local pol_query = function (method, urlpath, headers, data)
   if h["content-encoding"] == "gzip" then
     resp = z.inflate (resp):read "*a"
   end
+
   resp, _, errmsg = json.decode (resp)
   return resp or { error = errmsg }
 end
 
-local pol_privquery = function (self, cmd, parm)
+local poloniex_authquery = function (self, cmd, parm)
   parm = parm or {}
   parm.command = cmd
-  parm.nonce = self.nonce
+  parm.nonce = nonce ()
   parm.currencyPair = parm.currencyPair and parm.currencyPair:upper()
 
   local post_data = urlencode_parm (parm)
   self.headers["content-length"] = #post_data
   self.headers.sign = crypto.hmac.digest ("sha512", post_data, self.secret)
-  self.nonce = self.nonce + 1
 
   return pol_query ("POST", "/tradingApi", self.headers, post_data)
 end
 
-local pol_pubquery = function (self, cmd, parm)
+local poloniex_publicquery = function (self, cmd, parm)
   parm = parm or {}
   parm.command = cmd
   parm.currencyPair = parm.currencyPair and parm.currencyPair:upper()
@@ -52,15 +53,15 @@ local pol_pubquery = function (self, cmd, parm)
   return pol_query ("GET", "/public?" .. urlencode_parm (parm))
 end
 
-local poloniex_pubapi = {}
-function poloniex_pubapi:markethistory (market1, market2)
-  local r = pol_pubquery (self, "returnTradeHistory", {currencyPair = market1 .. "_" .. market2})
+local poloniex_publicapi = {}
+function poloniex_publicapi:markethistory (market1, market2)
+  local r = poloniex_publicquery (self, "returnTradeHistory", {currencyPair = market1 .. "_" .. market2})
   if r.error then return nil, r.error end
   return r
 end
 
-function poloniex_pubapi:orderbook (market1, market2)
-  local r = pol_pubquery (self, "returnOrderBook", {currencyPair = market1 .. "_" .. market2})
+function poloniex_publicapi:orderbook (market1, market2)
+  local r = poloniex_publicquery (self, "returnOrderBook", {currencyPair = market1 .. "_" .. market2})
   if r.error then return nil, r.error end
 
   r.bids  = tablex.zip (unpack (r.bids))
@@ -77,74 +78,125 @@ function poloniex_pubapi:orderbook (market1, market2)
   return r
 end
 
-function poloniex_pubapi:lendingbook(currency)
-  local r = pol_pubquery (self, "returnLoanOrders", {currency = currency})
+function poloniex_publicapi:lendingbook (currency)
+  local r = poloniex_publicquery (self, "returnLoanOrders", {currency = currency})
   if r.error then return nil, r.error end
   return r
 end
 
-local poloniex_privapi = { __index = poloniex_pubapi }
-function poloniex_privapi:balance ()
-  local r = pol_privquery (self, "returnBalances")
+local poloniex_lendingapi = {}
+function poloniex_lendingapi:lendingoffer (currency, rate, quantity, duration, autorenew)
+  local parm =
+    {
+      currency = currency,
+      lendingRate = rate / 100,
+      amount = quantity,
+      duration = duration or 2,
+      autoRenew = autorenew and 1 or 0
+    }
+  local r = self.authquery ("createLoanOffer", parm)
   if r.error then return nil, r.error end
-
-  local balances = r
-  for code, balance in pairs (balances) do
-    balances[code] = tonumber (balance)
-    if balances[code] == 0 then
-      balances[code] = nil
-    end
-  end
-  balances.BTC = balances.BTC or 0
-  return balances
+  return r
 end
 
-function poloniex_privapi:tradehistory (market1, market2, start_period, stop_period)
+function poloniex_lendingapi:canceloffer (orderid)
+  local r = self.authquery ("cancelLoanOffer", {orderNumber = orderid})
+  if r.error then return nil, r.error end
+  return r
+end
+
+function poloniex_lendingapi:openoffers (currency)
+  local r = self.authquery ("returnOpenLoanOffers")
+  if r.error then return nil, r.error end
+  return r[currency] or {}
+end
+
+function poloniex_lendingapi:balance ()
+  local r = self.authquery ("returnAvailableAccountBalances", {account = "lending"})
+  if r.error then return nil, r.error end
+  return r.lending
+end
+
+local poloniex_tradingapi = {}
+function poloniex_tradingapi:balance ()
+  local r = self.authquery ("returnAvailableAccountBalances", {account = "exchange"})
+  if r.error then return nil, r.error end
+  return r.exchange
+end
+
+function poloniex_tradingapi:tradehistory (market1, market2, start_period, stop_period)
   local parm =
     {
       currencyPair = market1 .. "_" .. market2,
       start = start_period or 1,
       ['end'] = stop_period
     }
-  local r = pol_privquery (self, "returnTradeHistory", parm)
+  local r = self.authquery ("returnTradeHistory", parm)
   if r.error then return nil, r.error end
   return r
 end
 
-function poloniex_privapi:buy (market1, market2, rate, quantity)
-  local r = pol_privquery (self, "buy", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
+function poloniex_tradingapi:buy (market1, market2, rate, quantity)
+  local r = self.authquery ("buy", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
   if r.error then return nil, r.error end
   return r
 end
 
-function poloniex_privapi:sell (market1, market2, rate, quantity)
-  local r = pol_privquery (self, "sell", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
+function poloniex_tradingapi:sell (market1, market2, rate, quantity)
+  local r = self.authquery ("sell", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
   if r.error then return nil, r.error end
   return r
 end
 
-function poloniex_privapi:cancelorder (market1, market2, ordernumber)
-  local r = pol_privquery (self, "cancelOrder", {currencyPair = market1 .. "_" .. market2, orderNumber = ordernumber})
+function poloniex_tradingapi:cancelorder (ordernumber)
+  local r = self.authquery ("cancelOrder", {orderNumber = ordernumber})
   if r.error then return nil, r.error end
   return r
 end
 
-function poloniex_privapi:openorders (market1, market2)
-  local r = pol_privquery (self, "returnOpenOrders", {currencyPair = market1 .. "_" .. market2})
+function poloniex_tradingapi:moveorder (ordernumber, newrate, quantity)
+  local parm =
+    {
+      orderNumber = ordernumber,
+      rate = newrate,
+      amount = quantity
+    }
+  local r = self.authquery ("moveOrder", parm)
   if r.error then return nil, r.error end
   return r
 end
 
-local session_mt = { __index = poloniex_privapi }
-function poloniex_pubapi:__call (t)
-  assert (t and t.key and t.secret, "No api key/secret parameter given.")
+function poloniex_tradingapi:openorders (market1, market2)
+  local r = self.authquery ("returnOpenOrders", {currencyPair = market1 .. "_" .. market2})
+  if r.error then return nil, r.error end
+  return r
+end
 
-  local headers =
+local make_authself = function (apikey, apisecret)
+  return
   {
-    key = t.key, ["content-type"] = "application/x-www-form-urlencoded",
+    headers =
+    {
+      key = apikey, ["content-type"] = "application/x-www-form-urlencoded",
+    },
+    secret = apisecret,
   }
-  return setmetatable({ headers = headers, secret = t.secret, nonce = os.time() * 2 }, session_mt)
 end
 
-setmetatable(poloniex_privapi, poloniex_privapi)
-return setmetatable(poloniex_pubapi, poloniex_pubapi)
+local make_apifactory = function (apimethods)
+  return function (apikey, apisecret)
+    assert (apikey and apisecret, "No api key/secret parameter given.")
+
+    local self        = make_authself (apikey, apisecret)
+    local new_api     = tablex.update ({}, apimethods)
+    new_api.authquery = function (...)
+                          return poloniex_authquery (self, ...)
+                        end
+    return new_api
+  end
+end
+
+poloniex_publicapi.lendingapi = make_apifactory (poloniex_lendingapi)
+poloniex_publicapi.tradingapi = make_apifactory (poloniex_tradingapi)
+
+return poloniex_publicapi
