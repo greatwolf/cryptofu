@@ -2,6 +2,14 @@ require 'pl.app'.require_here ".."
 local make_retry = require 'tools.retry'
 local utest = require 'tools.unittest'
 
+local function echo_off(func, ...)
+  local stdout_mt = getmetatable (io.stdout).__index
+  local stdout_write = stdout_mt.write
+  stdout_mt.write = function () end
+  func (...)
+  stdout_mt.write = stdout_write
+end
+
 utest.group "retrywrap"
 {
   test_retryfunc = function ()
@@ -12,7 +20,7 @@ utest.group "retrywrap"
     end
     
     local f_wrapped = make_retry (f, 2, "some error")
-    f_wrapped ()
+    echo_off (f_wrapped)
     assert (retry_count == 2)
   end,
 
@@ -25,8 +33,8 @@ utest.group "retrywrap"
     }
 
     local t_wrapped = make_retry (t, 2, "an error")
-    t_wrapped.func1 ()
-    t_wrapped.func2 ()
+    echo_off (t_wrapped.func1)
+    echo_off (t_wrapped.func2)
     assert (r1 == 2)
     assert (r2 == 2)
   end,
@@ -35,14 +43,15 @@ utest.group "retrywrap"
     local count = 0
     local mt = {}
     mt.__index = function (t, k)
-      if k == "badfunction" then count = count + 1 end
+      if k == "badcall" then count = count + 1 end
       return nil
     end
     local t = setmetatable({}, mt)
+    t.goodcall = function () count = count + 1 end
 
     local t_wrapped = make_retry (t, 2, "an error")
-    assert  (not pcall (t_wrapped.badfunction))
-    assert (count == 1)
+    assert  (not pcall (function () t_wrapped.goodcall(); t_wrapped.badcall() end))
+    assert (count == 2)
   end,
 
   test_retrymultireason = function ()
@@ -57,7 +66,7 @@ utest.group "retrywrap"
     }
 
     local t_wrapped = make_retry (t, 3, "error1", "error2")
-    t_wrapped.func ()
+    echo_off (t_wrapped.func)
     assert (r == 3)
   end,
 
@@ -69,7 +78,7 @@ utest.group "retrywrap"
       func2 = function () r = r + 1; error "some error" end
     }
     local t_wrapped = make_retry (t, 3, "some error")
-    local noerr, errmsg = pcall (t_wrapped.func1, t_wrapped)
+    local noerr, errmsg = echo_off (pcall, t_wrapped.func1, t_wrapped)
     assert (not noerr)
     assert (r == 3, r)
   end,
