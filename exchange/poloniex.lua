@@ -108,6 +108,7 @@ end
 function poloniex_lendingapi:openoffers (currency)
   local r = self.authquery ("returnOpenLoanOffers")
   if r.error then return nil, r.error end
+  if not currency then return r end
   return r[currency] or {}
 end
 
