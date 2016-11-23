@@ -21,8 +21,8 @@ local pol_query = function (method, urlpath, headers, data)
       sink = ltn12.sink.table (resp),
     }
   resp = table.concat (resp)
-  if not r then print ("query err:", r, c, h, s); os.exit (1) end
-  assert (r, c)
+  if not r then print ("query err:", r, c, h, s); end
+  assert (r, s or c)
 
   if h["content-encoding"] == "gzip" then
     resp = z.inflate (resp):read "*a"
