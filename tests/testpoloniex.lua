@@ -143,7 +143,7 @@ utest.group "poloniex_lendingapi"
   end,
 
   test_lendingoffer = function ()
-    local r = assert (lendapi:lendingoffer ("BTC", 2.0, 0.001, 3, false))
+    local r = assert (lendapi:lendingoffer ("BTC", 0.02, 0.001, 3, false))
 
     table.insert (test_offers, assert (r.orderID))
   end,
@@ -154,7 +154,16 @@ utest.group "poloniex_lendingapi"
     local k, v = next (r)
     assert (type(k) == 'string')
     assert (v + 0 > 0)
-  end
+  end,
+
+  test_activeoffersquery = function ()
+    local r = assert (lendapi:activeoffers "BTC")
+    assert (type(r) == 'table')
+    if #r > 0 then
+      assert (r[1].currency == 'BTC')
+      assert (r[1].amount + 0 > 0)
+    end
+  end,
 }
 
 utest.group "poloniex_orderlist"

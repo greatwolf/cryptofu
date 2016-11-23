@@ -89,7 +89,7 @@ function poloniex_lendingapi:lendingoffer (currency, rate, quantity, duration, a
   local parm =
     {
       currency = currency,
-      lendingRate = rate / 100,
+      lendingRate = rate,
       amount = quantity,
       duration = duration or 2,
       autoRenew = autorenew and 1 or 0
@@ -109,6 +109,14 @@ function poloniex_lendingapi:openoffers (currency)
   local r = self.authquery ("returnOpenLoanOffers")
   if r.error then return nil, r.error end
   return r[currency] or {}
+end
+
+function poloniex_lendingapi:activeoffers (currency)
+  local r = self.authquery ("returnActiveLoans")
+  if r.error then return nil, r.error end
+  r = r.provided
+  if not currency then return r end
+  return tablex.filter (r, function (v) return v.currency == currency end)
 end
 
 function poloniex_lendingapi:balance ()
