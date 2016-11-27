@@ -1,5 +1,6 @@
 require 'pl.app'.require_here ".."
 
+require 'tests.testsimplestack'
 require 'tests.testarbitrate'
 require 'tests.testretrywrap'
 require 'tests.testlogger'
