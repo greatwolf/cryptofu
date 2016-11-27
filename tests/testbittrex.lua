@@ -1,5 +1,6 @@
 require 'pl.app'.require_here ".."
 local utest = require 'tools.unittest'
+local stack = require 'tools.simplestack'
 local pltest = require 'pl.test'
 local dump = require 'pl.pretty'.dump
 
@@ -46,7 +47,7 @@ utest.group "bittrex_pubapi"
   end
 }
 
-local test_orders = {}
+local test_orders = stack ()
 utest.group "bittrex_privapi"
 {
   test_balance = function ()
@@ -63,14 +64,14 @@ utest.group "bittrex_privapi"
     local r, errmsg = session:buy ("BTC", "LTC", 0.000015, 34)
 
     assert (errmsg == "INSUFFICIENT_FUNDS" or (r and r.orderNumber), errmsg)
-    table.insert (test_orders, r and r.orderNumber)
+    test_orders:push (r and r.orderNumber)
   end,
 
   test_sell = function ()
     local r, errmsg = assert (session:sell("BTC", "VTC", 1.5, 0.01))
 
     assert (errmsg == "INSUFFICIENT_FUNDS" or (r and r.orderNumber), errmsg)
-    table.insert (test_orders, r and r.orderNumber)
+    test_orders:push (r and r.orderNumber)
   end,
 }
 
@@ -87,9 +88,9 @@ utest.group "bittrex_orderlist"
 utest.group "bittrex_cancels"
 {
   test_cancelorder = function ()
-    for i = #test_orders, 1, -1 do
-      assert (session:cancelorder ("BTC", "VTC", test_orders[i]))
-      table.remove (test_orders)
+    while not test_orders:empty () do
+      assert (session:cancelorder ("BTC", "VTC", test_orders:top ()))
+      test_orders:pop ()
     end
   end,
 }

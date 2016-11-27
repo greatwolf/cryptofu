@@ -1,5 +1,6 @@
 require 'pl.app'.require_here ".."
 local utest = require 'tools.unittest'
+local stack = require 'tools.simplestack'
 local dump = require 'pl.pretty'.dump
 
 local keys = require 'tests.api_testkeys'.poloniex
@@ -80,8 +81,8 @@ utest.group "poloniex_publicapi"
 local make_retry = require 'tools.retry'
 local tradeapi = assert (publicapi.tradingapi (keys.key, keys.secret))
 
-local test_orders = {}
-local test_offers = {}
+local test_orders = stack ()
+local test_offers = stack ()
 utest.group "poloniex_tradingapi"
 {
   test_tradingapinames = function()
@@ -113,20 +114,20 @@ utest.group "poloniex_tradingapi"
   test_buy = function ()
     local r = assert (tradeapi:buy ("BTC", "VTC", 0.00000015, 1000))
 
-    table.insert (test_orders, assert (r.orderNumber))
+    test_orders:push (assert (r.orderNumber))
   end,
 
   test_sell = function ()
     local r = assert (tradeapi:sell ("USDT", "BTC", 40000, 0.000001))
 
-    table.insert (test_orders, assert (r.orderNumber))
+    test_orders:push (assert (r.orderNumber))
   end,
 
   test_moveorder = function ()
     local test_order = tradeapi:sell ("USDT", "BTC", 41000, 0.000001)
     local r = assert (tradeapi:moveorder (test_order.orderNumber, 42000))
 
-    table.insert (test_orders, r.orderNumber)
+    test_orders:push (r.orderNumber)
     assert (r.success == 1)
   end,
 }
@@ -145,7 +146,7 @@ utest.group "poloniex_lendingapi"
   test_lendingoffer = function ()
     local r = assert (lendapi:lendingoffer ("BTC", 0.02, 0.001, 3, false))
 
-    table.insert (test_offers, assert (r.orderID))
+    test_offers:push (assert (r.orderID))
   end,
 
   test_lendingbalance = function ()
@@ -187,22 +188,22 @@ utest.group "poloniex_orderlist"
 utest.group "poloniex_cancels"
 {
   test_cancelorder = function ()
-    assert (#test_orders > 0, "No test orders to cancel.")
+    assert (not test_orders:empty (), "No test orders to cancel.")
     local r
-    for i = #test_orders, 1, -1 do
-      r = assert (tradeapi:cancelorder (test_orders[i]))
+    while not test_orders:empty () do
+      r = assert (tradeapi:cancelorder (test_orders:top ()))
       assert (r.success == 1)
-      table.remove (test_orders)
+      test_orders:pop ()
     end
   end,
 
   test_canceloffer = function ()
-    assert (#test_offers > 0, "No test offers to cancel.")
+    assert (not test_offers:empty (), "No test offers to cancel.")
     local r
-    for i = #test_offers, 1, -1 do
-      r = assert (lendapi:canceloffer (test_offers[i]))
+    while not test_offers:empty () do
+      r = assert (lendapi:canceloffer (test_offers:top ()))
       assert (r.success == 1)
-      table.remove (test_offers)
+      test_offers:pop ()
     end
   end,
 }
