@@ -30,9 +30,9 @@ local function map_transpose (t, rename)
   end
   -- perform optional field renames
   if rename then
-    for k, v in pairs (transposed) do
-      if rename[k] then
-        transposed[ rename[k] ], transposed[k] = v
+    for old, new in pairs (rename) do
+      if type (old) == "string" then
+        transposed[new], transposed[old] = transposed[old]
       end
     end
   end
