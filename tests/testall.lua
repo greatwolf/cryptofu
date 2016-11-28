@@ -3,6 +3,7 @@ require 'pl.app'.require_here ".."
 require 'tests.testsimplestack'
 require 'tests.testarbitrate'
 require 'tests.testretrywrap'
+require 'tests.testheartbeat'
 require 'tests.testlogger'
 require 'tests.testsleep'
 require 'tests.testbittrex'
