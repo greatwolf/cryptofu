@@ -28,8 +28,9 @@ local pol_query = function (method, urlpath, headers, data)
     resp = z.inflate (resp):read "*a"
   end
 
-  resp, _, errmsg = json.decode (resp)
-  return resp or { error = errmsg }
+  local json_resp
+  json_resp, _, errmsg = json.decode (resp)
+  return json_resp or { error = errmsg .. ':\n\t' .. resp }
 end
 
 local function poloniex_authquery (self, cmd, parm)
