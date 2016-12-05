@@ -67,7 +67,7 @@ utest.group "heartbeat"
 
     beat:tick ()
     local actual = mock_writer.results ()
-    local expected = "\n[.       ]"
+    local expected = "[.       ]"
     assert (actual == expected)
   end,
 
@@ -83,7 +83,7 @@ utest.group "heartbeat"
     beat:tick ()
     io.write = iowrite
     local actual = mock_writer.results ()
-    local expected = "\n[.  ]"
+    local expected = "[.  ]"
     assert (actual == expected)
   end,
 
@@ -97,7 +97,7 @@ utest.group "heartbeat"
     beat:tick ()
     beat:clear ()
     local actual = mock_writer.results ()
-    local expected = "\n    "
+    local expected = "    "
     assert (actual == expected)
   end,
 
@@ -111,7 +111,7 @@ utest.group "heartbeat"
     beat:clear ()
     beat:tick ()
     local actual = mock_writer.results ()
-    local expected = "\n[.   ]"
+    local expected = "[.   ]"
     assert (actual == expected)
   end,
 
@@ -126,7 +126,7 @@ utest.group "heartbeat"
       beat:tick ()
     end
     local actual = mock_writer.results ()
-    local expected = "\n[.....]"
+    local expected = "[.....]"
     assert (actual == expected)
   end,
 
@@ -141,7 +141,7 @@ utest.group "heartbeat"
       beat:tick ()
     end
     local actual = mock_writer.results ()
-    local expected = "\n[  ...]"
+    local expected = "[  ...]"
     assert (actual == expected)
   end,
 }

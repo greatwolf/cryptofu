@@ -23,7 +23,6 @@ local function clear_pulseline (self)
 end
 
 local function print_pulseline (self)
-  self.pulse_writer '\n'
   self.pulse_writer (self.pulse_linestr)
   self.pulse_writer (('\b'):rep (self.pulse_width - 1))
 end
