@@ -32,7 +32,7 @@ local pol_query = function (method, urlpath, headers, data)
   return resp or { error = errmsg }
 end
 
-local poloniex_authquery = function (self, cmd, parm)
+local function poloniex_authquery (self, cmd, parm)
   parm = parm or {}
   parm.command = cmd
   parm.nonce = nonce ()
@@ -42,7 +42,16 @@ local poloniex_authquery = function (self, cmd, parm)
   self.headers["content-length"] = #post_data
   self.headers.sign = crypto.hmac.digest ("sha512", post_data, self.secret)
 
-  return pol_query ("POST", "/tradingApi", self.headers, post_data)
+  local res = pol_query ("POST", "/tradingApi", self.headers, post_data)
+  if res.error then
+    -- if it's just a bad nonce, update nonce and retry
+    local new_nonce = res.error:match "Nonce must be greater than (%d+)%."
+    if new_nonce then
+      nonce (new_nonce + 0)
+      return poloniex_authquery (self, cmd, parm)
+    end
+  end
+  return res
 end
 
 local poloniex_publicquery = function (self, cmd, parm)
