@@ -8,45 +8,71 @@ local find = function (t, msg)
 end
 
 -- Retries a function/action if it fails for given reason,
--- up to retry_limit. 'context' holds a list of errors to match against.
--- If the error thrown is one of the error strings in context, the retry is
+-- up to retry_limit. 'reasons' holds a list of errors to match against.
+-- If the error thrown is one of the error strings in reasons, the retry is
 -- attempted.
-local retry_wrapfunc = function (f, reasons, retry_limit)
-  local lognote, logwarn = log "Note", log "Warning"
-  return function (...)
-    local attempts = 0
-    local res
-    while attempts < retry_limit do
-      res = {pcall (f, ...)}
-      attempts = attempts + 1
-      if res[1] then
-        lognote._if (attempts > 1, "retry succeeds after " .. attempts ..  " attempt(s).")
-        return unpack (res, 2, table.maxn (res))
+-- Takes an optional 'output_writer' for logging retry status
+local retry_wrapfunc = function (f, reasons, retry_limit, output_writer)
+  if output_writer then
+    return function (...)
+      local attempts = 0
+      local res
+      while attempts < retry_limit do
+        res = {pcall (f, ...)}
+        attempts = attempts + 1
+        if res[1] then
+          if attempts > 1 then
+            output_writer ("retry succeeds after " .. attempts ..  " attempt(s).")
+          end
+          return unpack (res, 2, table.maxn (res))
+        end
+        output_writer (res[2]:match "%d+: (.+)")
+        if not find (reasons, res[2]) then break end
       end
-      if not find (reasons, res[2]) then break end
+      if attempts > 1 then
+        output_writer ("retry fails after " .. attempts ..  " attempt(s).")
+      end
+      error (res[2], 2)
     end
-    logwarn._if (attempts > 1, "retry fails after " .. attempts ..  " attempt(s).")
-    error (res[2], 2)
+  else
+    return function (...)
+      local attempts = 0
+      local res
+      while attempts < retry_limit do
+        res = {pcall (f, ...)}
+        attempts = attempts + 1
+        if res[1] then
+          return unpack (res, 2, table.maxn (res))
+        end
+        if not find (reasons, res[2]) then break end
+      end
+      error (res[2], 2)
+    end
   end
 end
 
-local retry_wrapmethod = function (wrapper, real_self, f, reasons, retry_limit)
+local retry_wrapmethod = function (wrapper, real_self, f, reasons, retry_limit, output_writer)
   -- Replace the wrapper table with the real object before function call
   -- This is to prevent the retry attempts from multiplying due to
   -- methods that might calling other methods on the same object.
   -- The wrapper should only apply to outside code calling into object methods;
   -- methods calling other methods should get the real object so the retry doesn't
   -- trigger and multiple.
-  local f = retry_wrapfunc (f, reasons, retry_limit)
+  local f = retry_wrapfunc (f, reasons, retry_limit, output_writer)
   return function (self, ...)
     if self == wrapper then self = real_self end
     return f (self, ...)
   end
 end
 
-local make_retry = function (obj, retry_limit, ...)
+local make_retry = function (obj, retry_limit, output_writer, ...)
   retry_limit = retry_limit or 1
-  local reasons = {...}
+  local reasons
+  if type (output_writer) == "string" then
+    reasons = {output_writer, ...}
+    output_writer = nil
+  else reasons = {...}
+  end
 
   for i, msg in ipairs (reasons) do
     reasons[i] = ": " .. msg
@@ -54,7 +80,7 @@ local make_retry = function (obj, retry_limit, ...)
   
   -- if given a func just wrap and return
   if type (obj) == "function" then
-    return retry_wrapfunc (obj, reasons, retry_limit)
+    return retry_wrapfunc (obj, reasons, retry_limit, output_writer)
   end
   
   -- handle table case
@@ -64,7 +90,7 @@ local make_retry = function (obj, retry_limit, ...)
     local lvalue = obj[k]
     t[k] = lvalue
     if type (lvalue) == "function" then
-      t[k] = retry_wrapmethod (wrapper, obj, lvalue, reasons, retry_limit)
+      t[k] = retry_wrapmethod (wrapper, obj, lvalue, reasons, retry_limit, output_writer)
     end
     return rawget (t, k)
   end

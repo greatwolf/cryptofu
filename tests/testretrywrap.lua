@@ -24,6 +24,29 @@ utest.group "retrywrap"
     assert (retry_count == 2)
   end,
 
+  test_retrylogfunc = function ()
+    local retry_count = 0
+    local f = function ()
+      retry_count = retry_count + 1
+      error "an error\n"
+    end
+    local logged_str = {}
+    local logger = function (...)
+      local n = select ('#', ...)
+      for i = 1, n do
+        table.insert (logged_str, select (i, ...))
+      end
+    end
+    local f_wrapped = make_retry (f, 2, logger, "an error\n")
+    pcall (f_wrapped)
+    local expected = "an error\n" ..
+                     "an error\n" ..
+                     "retry fails after 2 attempt(s)."
+    assert (retry_count == 2)
+    logged_str = table.concat (logged_str)
+    assert (logged_str == expected, logged_str)
+  end,
+
   test_retrytable = function ()
     local r1, r2 = 0, 0
     local t =
