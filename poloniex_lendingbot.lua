@@ -113,7 +113,7 @@ local place_newoffers = function (context)
     :take (newoffer_count)
     :map (function (v)
             sleep (250)
-            local offerstat, errmsg = lendapi:lendingoffer ("BTC", v.rate, lend_quantity)
+            local offerstat, errmsg = lendapi:placeoffer ("BTC", v.rate, lend_quantity)
             if errmsg then return errmsg end
 
             assert (offerstat.success == 1)
