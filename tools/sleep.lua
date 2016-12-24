@@ -1,9 +1,9 @@
-local sockselect = require 'socket'.select
+local socksleep = require 'socket'.sleep
 
 local sleep = function (msec)
   assert (type(msec) == 'number', "invalid msec parameter for sleep")
 
-  sockselect (nil, nil, msec * 1E-3)
+  socksleep (msec * 1E-3)
 end
 
 return sleep
