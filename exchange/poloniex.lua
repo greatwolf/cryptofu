@@ -94,7 +94,7 @@ function poloniex_publicapi:lendingbook (currency)
 end
 
 local poloniex_lendingapi = {}
-function poloniex_lendingapi:lendingoffer (currency, rate, quantity, duration, autorenew)
+function poloniex_lendingapi:placeoffer (currency, rate, quantity, duration, autorenew)
   local parm =
     {
       currency = currency,

@@ -22,7 +22,7 @@ utest.group "poloniex_publicapi"
     assert (not publicapi.openorders)
     assert (not publicapi.tradehistory)
     assert (not publicapi.balance)
-    assert (not publicapi.lendingoffer)
+    assert (not publicapi.placeoffer)
     assert (not publicapi.canceloffer)
     assert (not publicapi.openoffers)
   end,
@@ -138,13 +138,13 @@ utest.group "poloniex_lendingapi"
   test_lendingapinames = function ()
     -- authenticated access should contain only lending functions
     assert (lendapi.balance)
-    assert (lendapi.lendingoffer)
+    assert (lendapi.placeoffer)
     assert (lendapi.canceloffer)
     assert (lendapi.openoffers)
   end,
 
-  test_lendingoffer = function ()
-    local r = assert (lendapi:lendingoffer ("BTC", 0.02, 0.001, 3, false))
+  test_placeoffer = function ()
+    local r = assert (lendapi:placeoffer ("BTC", 0.02, 0.001, 3, false))
 
     test_offers:push (assert (r.orderID))
   end,
