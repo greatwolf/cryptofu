@@ -32,10 +32,10 @@ utest.group "bittrex_pubapi"
     assert (r.bids.price and r.asks.price)
     assert (r.bids.amount and r.asks.amount)
     assert (r.bids.price[1] < r.asks.price[1])
-    assert (type(r.asks.amount[1]) == "number")
-    assert (type(r.asks.price[1])  == "number")
-    assert (type(r.bids.amount[1]) == "number")
-    assert (type(r.bids.price[1])  == "number")
+    assert (type(r.asks.amount[1]) == 'number')
+    assert (type(r.asks.price[1])  == 'number')
+    assert (type(r.bids.amount[1]) == 'number')
+    assert (type(r.bids.price[1])  == 'number')
   end,
 
   test_mixcasequery = function ()
@@ -53,7 +53,7 @@ utest.group "bittrex_privapi"
   test_balance = function ()
     local r = assert (session:balance ())
 
-    assert (r.BTC and type (r.BTC) == "number")
+    assert (r.BTC and type (r.BTC) == 'number')
   end,
 
   test_tradehistory = function ()
@@ -80,7 +80,7 @@ utest.group "bittrex_orderlist"
   test_openorders = function ()
     local r = assert (session:openorders ("BTC", "VTC"))
 
-    assert (type(r) == "table")
+    assert (type(r) == 'table')
     assert (#r > 0)
   end,
 }

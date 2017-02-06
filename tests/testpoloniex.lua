@@ -63,10 +63,10 @@ utest.group "poloniex_publicapi"
     assert (r.asks.amount and r.bids.amount)
     assert (r.asks.price and r.bids.price)
     assert (r.bids.price[1] < r.asks.price[1])
-    assert (type(r.asks.amount[1]) == "number")
-    assert (type(r.asks.price[1])  == "number")
-    assert (type(r.bids.amount[1]) == "number")
-    assert (type(r.bids.price[1])  == "number")
+    assert (type(r.asks.amount[1]) == 'number')
+    assert (type(r.asks.price[1])  == 'number')
+    assert (type(r.bids.amount[1]) == 'number')
+    assert (type(r.bids.price[1])  == 'number')
   end,
 
   test_mixcasequery = function ()
@@ -107,7 +107,7 @@ utest.group "poloniex_tradingapi"
   test_tradehistory = function ()
     local r = assert (tradeapi:tradehistory ("BTC", "LTC"))
 
-    assert (type(r) == "table")
+    assert (type(r) == 'table')
     assert (#r > 0)
   end,
 
@@ -161,7 +161,7 @@ utest.group "poloniex_lendingapi"
     local r = assert (lendapi:activeoffers "BTC")
     assert (type(r) == 'table')
     if #r > 0 then
-      assert (r[1].currency == 'BTC')
+      assert (r[1].currency == "BTC")
       assert (r[1].amount + 0 > 0)
     end
   end,
@@ -172,7 +172,7 @@ utest.group "poloniex_orderlist"
   test_openorders = function ()
     local r = assert (tradeapi:openorders ("USDT", "BTC"))
 
-    assert (type(r) == "table")
+    assert (type(r) == 'table')
     assert (#r > 0)
     assert (r[1].orderNumber)
   end,
@@ -180,7 +180,7 @@ utest.group "poloniex_orderlist"
   test_openoffers = function ()
     local r = assert (lendapi:openoffers "BTC")
 
-    assert (type(r) == "table")
+    assert (type(r) == 'table')
     table.foreachi (r, function (_, n) assert (n.id) end)
   end,
 }
