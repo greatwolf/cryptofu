@@ -112,23 +112,27 @@ utest.group "poloniex_tradingapi"
   end,
 
   test_buy = function ()
-    local r = assert (tradeapi:buy ("BTC", "VTC", 0.00000015, 1000))
+    local r, errmsg = tradeapi:buy ("BTC", "VTC", 0.00000015, 1000)
 
-    test_orders:push (assert (r.orderNumber))
+    assert (errmsg == "Not enough BTC." or (r and r.orderNumber), errmsg)
+    if r then
+      test_orders:push (assert (r.orderNumber))
+    end
   end,
 
   test_sell = function ()
-    local r = assert (tradeapi:sell ("USDT", "BTC", 40000, 0.000001))
+    local r, errmsg = tradeapi:sell ("USDT", "BTC", 40000, 0.000001)
 
-    test_orders:push (assert (r.orderNumber))
+    assert (errmsg == "Not enough BTC." or (r and r.orderNumber), errmsg)
+    if r then 
+      test_orders:push (assert (r.orderNumber))
+    end
   end,
 
-  test_moveorder = function ()
-    local test_order = tradeapi:sell ("USDT", "BTC", 41000, 0.000001)
-    local r = assert (tradeapi:moveorder (test_order.orderNumber, 42000))
+  test_badmoveorder = function ()
+    local r, errmsg = tradeapi:moveorder ("BAD_ORDERNUMBER", 42000)
 
-    test_orders:push (r.orderNumber)
-    assert (r.success == 1)
+    assert (errmsg == "Invalid orderNumber parameter.", errmsg)
   end,
 }
 
@@ -144,9 +148,12 @@ utest.group "poloniex_lendingapi"
   end,
 
   test_placeoffer = function ()
-    local r = assert (lendapi:placeoffer ("BTC", 0.02, 0.001, 3, false))
+    local r, errmsg = lendapi:placeoffer ("BTC", 0.02, 0.001, 3, false)
 
-    test_offers:push (assert (r.orderID))
+    assert (errmsg == "Amount must be at least 0.01." or (r and r.orderID), errmsg)
+    if r then
+      test_offers:push (assert (r.orderID))
+    end
   end,
 
   test_lendingbalance = function ()
@@ -173,8 +180,7 @@ utest.group "poloniex_orderlist"
     local r = assert (tradeapi:openorders ("USDT", "BTC"))
 
     assert (type(r) == 'table')
-    assert (#r > 0)
-    assert (r[1].orderNumber)
+    assert (r[1] == nil or r[1].orderNumber)
   end,
 
   test_openoffers = function ()
@@ -188,8 +194,12 @@ utest.group "poloniex_orderlist"
 utest.group "poloniex_cancels"
 {
   test_cancelorder = function ()
+    local r, errmsg = tradeapi:cancelorder ("BAD_ORDERNUMBER")
+    assert (errmsg == "Invalid orderNumber parameter.", errmsg)
+    
+    if test_orders:empty () then return end
+
     assert (not test_orders:empty (), "No test orders to cancel.")
-    local r
     while not test_orders:empty () do
       r = assert (tradeapi:cancelorder (test_orders:top ()))
       assert (r.success == 1)
@@ -198,8 +208,12 @@ utest.group "poloniex_cancels"
   end,
 
   test_canceloffer = function ()
+    local r, errmsg = lendapi:canceloffer ("BAD_OFFERERNUMBER")
+    assert (errmsg == "Invalid orderNumber parameter.", errmsg)
+    
+    if test_offers:empty () then return end
+
     assert (not test_offers:empty (), "No test offers to cancel.")
-    local r
     while not test_offers:empty () do
       r = assert (lendapi:canceloffer (test_offers:top ()))
       assert (r.success == 1)
