@@ -65,6 +65,8 @@ mt.__gc = function (self)
   io.write ((" "):rep (27), ("="):rep (53))
   io.write ((" "):rep (31), string.format ("%3d Passed, %3d Failed, Total %3d, %s",
                                            count - fail, fail, count, pretty_timer (elapse)))
+
+  if fail > 0 then os.exit(fail) end
 end
 
 return utest
