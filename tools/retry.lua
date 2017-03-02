@@ -18,13 +18,13 @@ local retry_wrapfunc = function (f, reasons, retry_limit, output_writer)
       local attempts = 0
       local res
       while attempts < retry_limit do
-        res = {pcall (f, ...)}
+        res = table.pack (pcall (f, ...))
         attempts = attempts + 1
         if res[1] then
           if attempts > 1 then
             output_writer ("retry succeeds after " .. attempts ..  " attempt(s).")
           end
-          return unpack (res, 2, table.maxn (res))
+          return unpack (res, 2, res.n)
         end
         output_writer (res[2]:match "%d+: (.+)")
         if not find (reasons, res[2]) then break end
@@ -39,10 +39,10 @@ local retry_wrapfunc = function (f, reasons, retry_limit, output_writer)
       local attempts = 0
       local res
       while attempts < retry_limit do
-        res = {pcall (f, ...)}
+        res = table.pack (pcall (f, ...))
         attempts = attempts + 1
         if res[1] then
-          return unpack (res, 2, table.maxn (res))
+          return unpack (res, 2, res.n)
         end
         if not find (reasons, res[2]) then break end
       end
