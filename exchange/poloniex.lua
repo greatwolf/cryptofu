@@ -74,6 +74,7 @@ function poloniex_publicapi:orderbook (market1, market2)
   local r = poloniex_publicquery (self, "returnOrderBook", {currencyPair = market1 .. "_" .. market2})
   if r.error then return nil, r.error end
 
+  local unpack = unpack or table.unpack
   r.bids  = tablex.zip (unpack (r.bids))
   r.asks = tablex.zip (unpack (r.asks))
   -- price table at index 1 and amount table at index 2

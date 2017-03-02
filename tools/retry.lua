@@ -13,6 +13,7 @@ end
 -- attempted.
 -- Takes an optional 'output_writer' for logging retry status
 local retry_wrapfunc = function (f, reasons, retry_limit, output_writer)
+  local unpack = unpack or table.unpack
   if output_writer then
     return function (...)
       local attempts = 0
