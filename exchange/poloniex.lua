@@ -1,37 +1,11 @@
-local https          = require 'ssl.https'
-local ltn12          = require 'ltn12'
 local crypto         = require 'crypto'
-local json           = require 'dkjson'
 local tablex         = require 'pl.tablex'
+local apiquery       = require 'tools.apiquery'
 local urlencode_parm = require 'tools.util'.urlencode_parm
 local nonce          = require 'tools.util'.nonce
-local z              = require 'zlib' -- for gzip
+
 
 local url = "https://poloniex.com"
-
-local pol_query = function (method, urlpath, headers, data)
-  local req_headers = { connection = "keep-alive", ["accept-encoding"] = "gzip", }
-  if headers then tablex.update (req_headers, headers) end
-  local resp, _, errmsg = {}
-  local r, c, h, s = https.request
-    {
-      method = method,
-      url = url .. urlpath,
-      headers = req_headers,
-      source = data and ltn12.source.string (data),
-      sink = ltn12.sink.table (resp),
-    }
-  resp = table.concat (resp)
-  assert (r, s or c)
-
-  if h["content-encoding"] == "gzip" then
-    resp = z.inflate (resp):read "*a"
-  end
-
-  local json_resp
-  json_resp, _, errmsg = json.decode (resp)
-  return json_resp or { error = errmsg .. ':\n\t' .. resp }
-end
 
 local function poloniex_authquery (self, cmd, parm)
   parm = parm or {}
@@ -43,7 +17,7 @@ local function poloniex_authquery (self, cmd, parm)
   self.headers["content-length"] = #post_data
   self.headers.sign = crypto.hmac.digest ("sha512", post_data, self.secret)
 
-  local res = pol_query ("POST", "/tradingApi", self.headers, post_data)
+  local res = apiquery.postrequest (url, "/tradingApi", self.headers, post_data)
   if res.error then
     -- if it's just a bad nonce, update nonce and retry
     local new_nonce = res.error:match "Nonce must be greater than (%d+)%."
@@ -60,7 +34,7 @@ local poloniex_publicquery = function (self, cmd, parm)
   parm.command = cmd
   parm.currencyPair = parm.currencyPair and parm.currencyPair:upper()
 
-  return pol_query ("GET", "/public?" .. urlencode_parm (parm))
+  return apiquery.getrequest (url, "/public?" .. urlencode_parm (parm))
 end
 
 local poloniex_publicapi = {}
