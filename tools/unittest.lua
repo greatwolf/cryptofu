@@ -52,7 +52,9 @@ local function run (testgroup_name, delay)
   test_report.totalelapse = test_report.totalelapse + elapse
 end
 
-local utest = newproxy (true)
+-- lua 5.2+ supports __gc for tables but must be non-nil when
+-- setting mt otherwise it won't be marked for finalization
+local utest = newproxy and newproxy (true) or setmetatable ({}, { __gc = true })
 local mt = getmetatable (utest)
 mt.__index = { group = group, run = run, run_single = run_single, }
 mt.__gc = function (self)
@@ -66,7 +68,7 @@ mt.__gc = function (self)
   io.write ((" "):rep (31), string.format ("%3d Passed, %3d Failed, Total %3d, %s",
                                            count - fail, fail, count, pretty_timer (elapse)))
 
-  if fail > 0 then os.exit(fail) end
+  if fail > 0 then os.exit (fail) end
 end
 
 return utest
