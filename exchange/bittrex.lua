@@ -1,4 +1,5 @@
 local https  = require 'ssl.https'
+local ltn12  = require 'ltn12'
 local crypto = require 'crypto'
 local json   = require 'dkjson'
 local tablex = require 'pl.tablex'
