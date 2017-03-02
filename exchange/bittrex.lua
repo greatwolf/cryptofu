@@ -1,34 +1,14 @@
-local https  = require 'ssl.https'
-local ltn12  = require 'ltn12'
 local crypto = require 'crypto'
-local json   = require 'dkjson'
 local tablex = require 'pl.tablex'
 local urlencode_parm = require 'tools.util'.urlencode_parm
 local map_transpose  = require 'tools.util'.map_transpose
 local nonce          = require 'tools.util'.nonce
+local apiquery       = require 'tools.apiquery'
 local dump = require 'pl.pretty'.dump
+
 
 local url = "https://bittrex.com"
 local apiv = "/api/v1.1"
-
-local bittrex_query = function (method, urlpath, headers, data)
-  local req_headers = { connection = "keep-alive" }
-  if headers then tablex.update (req_headers, headers) end
-  local resp = {}
-  local r, c, h = https.request
-    {
-      method = method,
-      url = url .. apiv .. urlpath,
-      headers = req_headers,
-      source = data and ltn12.source.string (data),
-      sink = ltn12.sink.table (resp),
-    }
-  assert (r, c)
-
-  resp = table.concat(resp)
-  assert (#resp > 0, "empty response!")
-  return json.decode (resp)
-end
 
 local bittrex_privquery = function (self, cmd, parm)
   parm = parm or {}
@@ -40,15 +20,15 @@ local bittrex_privquery = function (self, cmd, parm)
   local uri = url .. apiv .. urlpath
   local headers = { apisign = crypto.hmac.digest ("sha512", uri, self.secret) }
 
-  return bittrex_query ("GET", urlpath, headers)
+  return apiquery.getrequest (url, apiv .. urlpath, headers)
 end
 
 local bittrex_pubquery = function (self, cmd, parm)
   parm = parm or {}
   parm.market = parm.market and parm.market:upper()
 
-  return bittrex_query ("GET", string.format ("%s?%s", 
-                                              cmd, urlencode_parm (parm)))
+  return apiquery.getrequest (url .. apiv, string.format ("%s?%s", 
+                                                          cmd, urlencode_parm (parm)))
 end
 
 local bittrex_api = {}
