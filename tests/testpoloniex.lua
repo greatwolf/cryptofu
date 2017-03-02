@@ -1,7 +1,8 @@
 require 'pl.app'.require_here ".."
 local utest = require 'tools.unittest'
 local stack = require 'tools.simplestack'
-local dump = require 'pl.pretty'.dump
+local dump  = require 'pl.pretty'.dump
+local tablex = require 'pl.tablex'
 
 local keys = require 'tests.api_testkeys'.poloniex
 local publicapi = require 'exchange.poloniex'
@@ -187,7 +188,7 @@ utest.group "poloniex_orderlist"
     local r = assert (lendapi:openoffers "BTC")
 
     assert (type(r) == 'table')
-    table.foreachi (r, function (_, n) assert (n.id) end)
+    tablex.foreachi (r, function (n) assert (n.id) end)
   end,
 }
 

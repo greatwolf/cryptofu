@@ -1,5 +1,6 @@
-local sleep = require 'tools.sleep'
-local clock = os.clock
+local sleep   = require 'tools.sleep'
+local tablex  = require 'pl.tablex'
+local clock   = os.clock
 local print, pcall = print, pcall
 
 local function pretty_timer (ms)
@@ -60,7 +61,7 @@ mt.__index = { group = group, run = run, run_single = run_single, }
 mt.__gc = function (self)
   print ("\nHarness Summary:")
   print (("-"):rep (80))
-  table.foreachi (test_report, function (_, v) print (v) end)
+  tablex.foreachi (test_report, function (v) print (v) end)
 
   local fail, count = test_report.totalfail, test_report.totalcount
   local elapse      = test_report.totalelapse
