@@ -11,7 +11,7 @@ assert (session)
 local make_retry = require 'tools.retry'
 session = make_retry (session, 3, "closed", "timeout")
 
-utest.group "bittrex_pubapi"
+utest.group "bittrex_publicapi"
 {
   test_bogusmarket = function ()
     local r, errmsg = session:markethistory ("BTC", "___")
@@ -48,7 +48,7 @@ utest.group "bittrex_pubapi"
 }
 
 local test_orders = stack ()
-utest.group "bittrex_privapi"
+utest.group "bittrex_tradingapi"
 {
   test_balance = function ()
     local r = assert (session:balance ())
