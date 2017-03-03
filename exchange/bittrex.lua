@@ -99,10 +99,10 @@ function bittrex_api:openorders (market1, market2)
 end
 
 local session_mt = { __index = bittrex_api }
-function bittrex_api:__call (t)
-  assert (t and t.key and t.secret, "No api key/secret parameter given.")
+function bittrex_api.tradingapi (key, secret)
+  assert (key and secret, "No api key/secret parameter given.")
 
-  return setmetatable({ key = t.key, secret = t.secret }, session_mt)
+  return setmetatable({ key = key, secret = secret }, session_mt)
 end
 
 return setmetatable(bittrex_api, bittrex_api)
