@@ -7,8 +7,8 @@ local apiquery       = require 'tools.apiquery'
 local dump = require 'pl.pretty'.dump
 
 
-local url = "https://bittrex.com"
 local apiv = "/api/v1.1"
+local url = "https://bittrex.com" .. apiv
 
 local bittrex_privquery = function (self, cmd, parm)
   parm = parm or {}
@@ -17,18 +17,18 @@ local bittrex_privquery = function (self, cmd, parm)
   parm.market = parm.market and parm.market:upper()
 
   local urlpath = cmd .. "?" .. urlencode_parm (parm)
-  local uri = url .. apiv .. urlpath
+  local uri = url .. urlpath
   local headers = { apisign = crypto.hmac.digest ("sha512", uri, self.secret) }
 
-  return apiquery.getrequest (url, apiv .. urlpath, headers)
+  return apiquery.getrequest (url, urlpath, headers)
 end
 
 local bittrex_pubquery = function (self, cmd, parm)
   parm = parm or {}
   parm.market = parm.market and parm.market:upper()
 
-  return apiquery.getrequest (url .. apiv, string.format ("%s?%s", 
-                                                          cmd, urlencode_parm (parm)))
+  return apiquery.getrequest (url, string.format ("%s?%s", 
+                                                  cmd, urlencode_parm (parm)))
 end
 
 local bittrex_api = {}
