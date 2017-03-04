@@ -14,7 +14,6 @@ local function poloniex_authquery (self, cmd, parm)
   parm.currencyPair = parm.currencyPair and parm.currencyPair:upper()
 
   local post_data = urlencode_parm (parm)
-  self.headers["content-length"] = #post_data
   self.headers.sign = crypto.hmac.digest ("sha512", post_data, self.secret)
 
   local res = apiquery.postrequest (url, "/tradingApi", self.headers, post_data)
