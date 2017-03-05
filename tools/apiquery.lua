@@ -30,7 +30,8 @@ function apiquery.getrequest(urlbase, urlpath, headers)
   end
 
   local json_resp, _, errmsg = json.decode (resp)
-  assert (not errmsg and json_resp, tostring (errmsg) .. ':\n\t' .. resp)
+  local debugmsg = ("%s:\n  %s .."):format (tostring (errmsg), resp:sub (1, 320))
+  assert (not errmsg and json_resp, debugmsg)
   return json_resp
 end
 
