@@ -122,7 +122,9 @@ end
 
 function bitfinex_tradingapi:cancelorder (...)
   local order_ids = tablex.filter ({...}, function (v) return type(v) == 'number' end)
-  assert (#order_ids > 0, "no valid orderids to cancel!")
+  if #order_ids < 1 then
+    return { result = "no valid order_ids given." }
+  end
   return self.authquery ("/order/cancel/multi", { order_ids = order_ids })
 end
 

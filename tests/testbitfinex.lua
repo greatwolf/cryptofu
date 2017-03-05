@@ -123,7 +123,7 @@ utest.group "bitfinex_cancels"
 {
   test_cancelbadorderid = function ()
     local ok, res = pcall (tradeapi.cancelorder, tradeapi, "BAD_ORDERNUMBER")
-    assert (not ok and res:match "no valid orderids to cancel!", res)
+    assert (ok and res.result == "no valid order_ids given.", res)
   end,
 
   test_cancelinvalidorder = function ()
