@@ -4,23 +4,24 @@ local json    = require 'dkjson'
 local tablex  = require 'pl.tablex'
 local z       = require 'zlib' -- for gzip
 
-local apiquery = {}
 
-function apiquery.getrequest(urlbase, urlpath, headers)
+local https_request = function (method, urlbase, urlpath, headers, postdata)
   urlpath = urlpath or ""
   local req_headers =
     {
       connection = "keep-alive",
       ["accept-encoding"] = "gzip",
+      ["content-length"] = postdata and #postdata,
     }
   if headers then tablex.update (req_headers, headers) end
   local resp = {}
   local r, c, h, s = https.request
     {
-      method = "GET",
+      method = method,
       url = urlbase .. urlpath,
       headers = req_headers,
       sink = ltn12.sink.table (resp),
+      source = postdata and ltn12.source.string (postdata),
     }
   resp = table.concat (resp)
   assert (r and c == 200, s or c)
@@ -35,34 +36,13 @@ function apiquery.getrequest(urlbase, urlpath, headers)
   return json_resp
 end
 
-function apiquery.postrequest(urlbase, urlpath, headers, postdata)
-  urlpath = urlpath or ""
-  local req_headers =
-    {
-      connection = "keep-alive",
-      ["accept-encoding"] = "gzip",
-      ["content-length"] = postdata and #postdata,
-    }
-  if headers then tablex.update (req_headers, headers) end
-  local resp = {}
-  local r, c, h, s = https.request
-    {
-      method = "POST",
-      url = urlbase .. urlpath,
-      headers = req_headers,
-      source = postdata and ltn12.source.string (postdata),
-      sink = ltn12.sink.table (resp),
-    }
-  resp = table.concat (resp)
-  assert (r and c == 200, s or c)
+local apiquery = {}
+apiquery.getrequest  = function (urlbase, urlpath, headers)
+  return https_request ("GET", urlbase, urlpath, headers)
+end
 
-  if h["content-encoding"] == "gzip" then
-    resp = z.inflate (resp):read "*a"
-  end
-
-  local json_resp, _, errmsg = json.decode (resp)
-  assert (not errmsg and json_resp, tostring (errmsg) .. ':\n\t' .. resp)
-  return json_resp
+apiquery.postrequest = function (urlbase, urlpath, headers, postdata)
+  return https_request ("POST", urlbase, urlpath, headers, postdata)
 end
 
 return apiquery
