@@ -68,6 +68,24 @@ utest.group "simplestack"
     assert (st:empty ())
     assert (st:top () == nil)
   end,
+
+  test_clearemptystack = function ()
+    local st = stack ()
+    assert (st:empty ())
+
+    st:clear ()
+    assert (st:empty ())
+  end,
+
+  test_clearnonemptystack = function ()
+    local st = stack {nil, nil, nil, "foo", nil, 42, true}
+    assert (not st:empty () and st:size () == 3)
+    assert (st:top () == true)
+
+    st:clear ()
+    assert (st:empty ())
+    assert (st:top () == nil)
+  end,
 }
 
 utest.run "simplestack"

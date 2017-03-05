@@ -11,7 +11,6 @@
   table stack.
 ]]
 
-local tablex = require 'pl.tablex'
 local tinsert, tremove = table.insert, table.remove
 
 local simplestack = {}
@@ -25,7 +24,9 @@ function simplestack.new (t)
   assert (not t or type(t) == "table")
   local self = setmetatable ({}, simplestack_mt)
   if type(t) == "table" then
-    tablex.foreachi (t, function (v) tinsert (self, v) end)
+    for i = 1, #t do
+      tinsert (self, t[i])
+    end
   end
   return self
 end
@@ -48,6 +49,12 @@ end
 
 function simplestack:empty ()
   return self:size () == 0
+end
+
+function simplestack:clear ()
+  repeat
+    tremove (self)
+  until #self == 0
 end
 
 return setmetatable (simplestack, simplestack)
