@@ -194,10 +194,12 @@ utest.group "poloniex_orderlist"
 
 utest.group "poloniex_cancels"
 {
-  test_cancelorder = function ()
+  test_cancelinvalidorder = function ()
     local r, errmsg = tradeapi:cancelorder ("BAD_ORDERNUMBER")
     assert (errmsg == "Invalid orderNumber parameter.", errmsg)
-    
+  end,
+
+  test_cancelorder = function ()
     if test_orders:empty () then return end
 
     assert (not test_orders:empty (), "No test orders to cancel.")
@@ -208,10 +210,12 @@ utest.group "poloniex_cancels"
     end
   end,
 
-  test_canceloffer = function ()
+  test_cancelinvalidoffer = function ()
     local r, errmsg = lendapi:canceloffer ("BAD_OFFERERNUMBER")
     assert (errmsg == "Invalid orderNumber parameter.", errmsg)
-    
+  end,
+
+  test_canceloffer = function ()
     if test_offers:empty () then return end
 
     assert (not test_offers:empty (), "No test offers to cancel.")
