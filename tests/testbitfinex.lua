@@ -69,12 +69,15 @@ utest.group "bitfinex_tradingapi"
   test_balance = function ()
     local r, errmsg = assert (tradeapi:balance ())
 
+    assert (type(r) == 'table')
     assert (#r > 0)
-    local _, v = next (r)
-    assert (type(v.type)     == 'string')
-    assert (type(v.currency) == 'string')
-    assert (v.amount and v.available)
-    assert (not (v.amount + v.available < 0))
+    tablex.foreachi (r, function (v)
+      assert (type(v.type) == 'string')
+      assert (v.type == "exchange")
+      assert (type(v.currency) == 'string')
+      assert (v.amount and v.available)
+      assert (not (v.amount + v.available < 0))
+    end)
   end,
 
   test_tradehistory = function ()
@@ -86,8 +89,8 @@ utest.group "bitfinex_tradingapi"
   test_buy = function ()
     local r, errmsg = tradeapi:buy ("BTC", "USD", 0.15, 1)
 
-    assert (r.order_id, errmsg or r)
-    assert (r.side == "buy")
+    assert (not errmsg and r, errmsg or r)
+    assert (r.order_id and r.side == "buy")
     if r then
       test_orders:push (assert (r.order_id))
     end
@@ -96,10 +99,66 @@ utest.group "bitfinex_tradingapi"
   test_sell = function ()
     local r, errmsg = tradeapi:sell ("BTC", "USD", 10000.9, 0.01)
 
-    assert (r.order_id, errmsg or r)
-    assert (r.side == "sell")
+    assert (not errmsg and r, errmsg or r)
+    assert (r.order_id and r.side == "sell")
     if r then
       test_orders:push (assert (r.order_id))
+    end
+  end,
+}
+
+local lendapi = assert (publicapi.lendingapi (keys.key, keys.secret))
+local test_offers = stack ()
+utest.group "bitfinex_lendingapi"
+{
+  test_lendingapinames = function ()
+    assert (not lendapi.orderbook)
+    assert (not lendapi.markethistory)
+    assert (not lendapi.buy)
+    assert (not lendapi.sell)
+    assert (not lendapi.cancelorder)
+    assert (not lendapi.openorders)
+    assert (not lendapi.tradehistory)
+
+    -- authenticated access should contain only lending functions
+    assert (lendapi.balance)
+    assert (lendapi.placeoffer)
+    assert (lendapi.canceloffer)
+    assert (lendapi.openoffers)
+    assert (lendapi.activeoffers)
+  end,
+
+  test_placeoffer = function ()
+    local r, errmsg = lendapi:placeoffer ("BTC", 0.02, 0.001, 3)
+
+    assert (errmsg:match "Invalid offer: incorrect amount" or (r and r.offer_id), errmsg)
+    if r then
+      test_offers:push (assert (r.offer_id))
+    end
+  end,
+
+  test_lendingbalance = function ()
+    local r, errmsg = assert (lendapi:balance ())
+
+    assert (type(r) == 'table')
+    assert (#r > 0)
+    tablex.foreachi (r, function (v)
+      assert (type(v.type) == 'string')
+      assert (v.type == "deposit")
+      assert (type(v.currency) == 'string')
+      assert (v.amount and v.available)
+      assert (not (v.amount + v.available < 0))
+    end)
+  end,
+
+  test_activeoffersquery = function ()
+    local r, errmsg = lendapi:activeoffers "BTC"
+
+    assert (r and not errmsg, errmsg)
+    assert (type(r) == 'table')
+    if #r > 0 then
+      assert (r[1].currency == "BTC")
+      assert (r[1].amount + 0 > 0)
     end
   end,
 }
@@ -117,6 +176,13 @@ utest.group "bitfinex_orderlist"
                           assert (v.original_amount)
                         end)
   end,
+
+  test_openoffers = function ()
+    local r = assert (lendapi:openoffers "USD")
+
+    assert (type(r) == 'table')
+    tablex.foreachi (r, function (n) assert (n.id and n.currency == "USD") end)
+  end,
 }
 
 utest.group "bitfinex_cancels"
@@ -127,8 +193,9 @@ utest.group "bitfinex_cancels"
   end,
 
   test_cancelinvalidorder = function ()
-    local ok, res = pcall (tradeapi.cancelorder, tradeapi, 42)
-    assert (ok and res.result == "None to cancel", res)
+    local ok, res, errmsg = pcall (tradeapi.cancelorder, tradeapi, 42)
+    assert (ok and res, res or errmsg)
+    assert (res.result == "None to cancel")
   end,
 
   test_cancelorder = function ()
@@ -147,5 +214,6 @@ utest.group "bitfinex_cancels"
 
 utest.run "bitfinex_publicapi"
 utest.run "bitfinex_tradingapi"
+utest.run "bitfinex_lendingapi"
 utest.run "bitfinex_orderlist"
 utest.run "bitfinex_cancels"

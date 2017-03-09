@@ -19,9 +19,9 @@ local function bitfinex_authquery (self, cmd, parm)
   self.headers['X-BFX-PAYLOAD']   = post_data
   self.headers['X-BFX-SIGNATURE'] = hmac.digest ("sha384", post_data, self.secret)
 
-  local res = apiquery.postrequest (url, cmd, self.headers)
-  if res[1] == "error" then
-    return nil, table.concat(res, " ")
+  local res, c = apiquery.postrequest (url, cmd, self.headers)
+  if c ~= 200 then
+    return nil, res.message
   end
 
   return res
@@ -78,7 +78,9 @@ end
 
 local bitfinex_tradingapi = {}
 function bitfinex_tradingapi:balance ()
-  return self.authquery ("/balances")
+  local r, errmsg = self.authquery ("/balances")
+  if not r then return r, errmsg end
+  return tablex.filter (r, function (v) return v.type == "exchange" end)
 end
 
 function bitfinex_tradingapi:tradehistory (market1, market2, start_period, stop_period)
@@ -88,8 +90,7 @@ function bitfinex_tradingapi:tradehistory (market1, market2, start_period, stop_
       timestamp = start_period or 1,
       ['until'] = stop_period
     }
-  local r = self.authquery ("/mytrades", parm)
-  return r
+  return self.authquery ("/mytrades", parm)
 end
 
 function bitfinex_tradingapi:buy (market1, market2, rate, quantity)
@@ -102,8 +103,7 @@ function bitfinex_tradingapi:buy (market1, market2, rate, quantity)
       type   = "exchange limit",
       is_postonly = true,
     }
-  local r = self.authquery ("/order/new", parm)
-  return r
+  return self.authquery ("/order/new", parm)
 end
 
 function bitfinex_tradingapi:sell (market1, market2, rate, quantity)
@@ -116,8 +116,7 @@ function bitfinex_tradingapi:sell (market1, market2, rate, quantity)
       type   = "exchange limit",
       is_postonly = true,
     }
-  local r = self.authquery ("/order/new", parm)
-  return r
+  return self.authquery ("/order/new", parm)
 end
 
 function bitfinex_tradingapi:cancelorder (...)
@@ -130,6 +129,51 @@ end
 
 function bitfinex_tradingapi:openorders (market1, market2)
   return self.authquery ("/orders")
+end
+
+local bitfinex_lendingapi = {}
+function bitfinex_lendingapi:placeoffer (currency, rate, quantity, duration, autorenew)
+  local parm =
+    {
+      currency  = currency,
+      amount    = tostring (quantity),
+      rate      = tostring (rate),
+      period    = duration or 2,
+      direction = "lend"
+    }
+  return self.authquery ("/offer/new", parm)
+end
+
+function bitfinex_lendingapi:canceloffer (orderid)
+  return self.authquery ("/offer/cancel", {offer_id = orderid})
+end
+
+function bitfinex_lendingapi:openoffers (currency)
+  local r, errmsg = self.authquery ("/offers")
+  if not r then return r, errmsg end
+  r = tablex.filter (r, function (v)
+                          return v.currency == currency and
+                                 v.direction == "lend"
+                        end)
+  tablex.foreach (r, function (v) v.rate = v.rate / 365 end)
+  return r
+end
+
+function bitfinex_lendingapi:activeoffers (currency)
+  local r, errmsg = self.authquery ("/credits")
+  if not r then return r, errmsg end
+  r = tablex.filter (r, function (v)
+                          return v.currency == currency and
+                                 v.direction == "lend"
+                        end)
+  tablex.foreach (r, function (v) v.rate = v.rate / 365 end)
+  return r
+end
+
+function bitfinex_lendingapi:balance ()
+  local r, errmsg = self.authquery ("/balances")
+  if not r then return r, errmsg end
+  return tablex.filter (r, function (v) return v.type == "deposit" end)
 end
 
 local make_authself = function (apikey, apisecret)
@@ -159,5 +203,6 @@ local make_apifactory = function (apimethods)
 end
 
 bitfinex_publicapi.tradingapi = make_apifactory (bitfinex_tradingapi)
+bitfinex_publicapi.lendingapi = make_apifactory (bitfinex_lendingapi)
 
 return bitfinex_publicapi
