@@ -37,7 +37,7 @@ local https_request = function (method, urlbase, urlpath, headers, postdata)
     debugmsg = (s or c) .. debugmsg
   end
   assert (not errmsg and type(json_resp) == 'table', debugmsg)
-  return json_resp
+  return json_resp, c
 end
 
 local apiquery = {}
