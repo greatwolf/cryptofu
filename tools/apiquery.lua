@@ -23,19 +23,17 @@ local https_request = function (method, urlbase, urlpath, headers, postdata)
       sink = ltn12.sink.table (resp),
       source = postdata and ltn12.source.string (postdata),
     }
-  resp = table.concat (resp)
-  assert (r and (c == 200 or c == 400), s or c)
+  assert (r and type(c) == 'number', s or c)
 
+  resp = table.concat (resp)
   if h["content-encoding"] == "gzip" then
     resp = z.inflate (resp):read "*a"
   end
 
   local json_resp, _, errmsg = json.decode (resp)
-  local debugmsg = " -> %s:\n  %s .."
+  local debugmsg = (s or c) .. " -> %s:\n  %s .."
   debugmsg = debugmsg:format (tostring (errmsg), resp:sub (1, 320))
-  if c ~= 200 then
-    debugmsg = (s or c) .. debugmsg
-  end
+
   assert (not errmsg and type(json_resp) == 'table', debugmsg)
   return json_resp, c
 end
