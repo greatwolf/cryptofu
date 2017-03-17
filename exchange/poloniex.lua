@@ -30,8 +30,9 @@ end
 
 local poloniex_publicquery = function (self, cmd, parm)
   parm = parm or {}
-  parm.command = cmd
-  parm.currencyPair = parm.currencyPair and parm.currencyPair:upper()
+  parm.command      = cmd
+  parm.currency     = parm.currency and parm.currency:upper ()
+  parm.currencyPair = parm.currencyPair and parm.currencyPair:upper ()
 
   return apiquery.getrequest (url, "/public?" .. urlencode_parm (parm))
 end
