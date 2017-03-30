@@ -16,13 +16,16 @@ local make_clearlog = function (logname, beat)
   end
 end
 
-local pulse   = heartbeat.newpulse (79)
+local hwidth  = 79
+local pulse   = heartbeat.newpulse (hwidth)
 local log     = make_clearlog ("LENDBOT", pulse)
 local loginfo = make_clearlog ("INFO", pulse)
-local keys    = apikeys.poloniex
-local lendapi = publicapi.lendingapi (keys.key, keys.secret)
-publicapi.lendingbook = make_retry (publicapi.lendingbook, 3, loginfo, "wantread", "closed", "timeout")
-lendapi.authquery     = make_retry (lendapi.authquery, 7, loginfo, "wantread", "closed", "timeout")
+local logcrit = make_clearlog ("CRITICAL", pulse)
+local auth    = apikeys.poloniex
+local lendapi = publicapi.lendingapi (auth.key, auth.secret)
+publicapi.lendingbook = make_retry (publicapi.lendingbook, 3, logcrit, "%w+")
+lendapi.authquery     = make_retry (lendapi.authquery,     7, logcrit,
+                                    "Bad Gateway", "wantread", "closed", "timeout")
 
 local tosatoshi = function (v) return tostring(v * 1E8) * 1 end
 local function markgaps (initial)
