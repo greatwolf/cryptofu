@@ -122,7 +122,7 @@ local place_newoffers = function (context)
             assert (offerstat.success == 1)
             context.balance = context.balance - lend_quantity
 
-            local status = "%s #%d, %.12g @%.6f%%"
+            local status = "%s #%d, %.8f @%.6f%%"
             return status:format (offerstat.message,
                                   offerstat.orderID,
                                   lend_quantity,
@@ -155,14 +155,14 @@ local function check_activeoffers (activeoffers)
   seq (expired)
     :map (function (id) return assert (prev_activedetail[ id ]) end)
     :foreach (function (v)
-                local status = "expired offer: #%s, %.12g @%.6f%%"
+                local status = "expired offer: #%s, %.8f @%.6f%%"
                 log (status:format (v.id, v.amount, v.rate * 100))
               end)
   local filled = set.values (curr_activeid - prev_activeid)
   seq (filled)
     :map (function (id) return assert (curr_activedetail[ id ]) end)
     :foreach (function (v)
-                local status = "filled offer: #%s, %.12g @%.6f%%"
+                local status = "filled offer: #%s, %.8f @%.6f%%"
                 log (status:format (v.id, v.amount, v.rate * 100))
               end)
 
