@@ -51,7 +51,7 @@ local function tounix_time (timestr)
       hour = hr, min = minute, sec = sec }
 end
 
-local utc_now = function () return os.time (os.date '!*t') end -- UTC
+local utc_now = function () return tounix_time (os.date '!%Y-%m-%d %H:%M:%S') end -- UTC
 local cancel_openoffers = function (context)
   local openoffers  = context.openoffers
   local r =
