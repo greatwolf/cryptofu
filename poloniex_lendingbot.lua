@@ -210,7 +210,7 @@ local function app_loop (func, throttle_delay)
 end
 
 local function delay (f, msec)
-  local last_run = just_now ()
+  local last_run = -msec
   return function (...)
     local now = just_now ()
     local elapse = now - last_run
