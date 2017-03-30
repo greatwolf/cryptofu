@@ -16,4 +16,16 @@ apikeys =
     key = "",
     secret = "",
   },
+
+  bitfinex = 
+  {
+    key = "",
+    secret = "",
+  },
+
+  kraken = 
+  {
+    key = "",
+    secret = "",
+  },
 }
