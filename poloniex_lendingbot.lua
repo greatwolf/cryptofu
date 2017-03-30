@@ -225,7 +225,7 @@ local function bot ()
   print "Poloniex Lending Bot"
   local lendingcontext = {}
   local relaxed, lively = 1, 2
-  local state = lively
+  local state = relaxed
   local run_bot =
   {
     [relaxed] = delay (function ()
@@ -240,7 +240,7 @@ local function bot ()
         state = lively
         log "looking alive!"
       end
-    end, 10*seconds),
+    end, 30*seconds),
 
     [lively] = delay (function ()
       lendingcontext.lendingbook    = assert (publicapi:lendingbook "BTC")
@@ -257,7 +257,7 @@ local function bot ()
       end
       cancel_openoffers (lendingcontext)
       place_newoffers (lendingcontext)
-    end, 3*seconds),
+    end, 7*seconds),
   }
 
   return function () run_bot[state] () end
