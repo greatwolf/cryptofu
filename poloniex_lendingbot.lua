@@ -6,7 +6,24 @@ local heartbeat   = require 'tools.heartbeat'
 local sleep = require 'tools.sleep'
 local seq   = require 'pl.seq'
 local set   = require 'pl.set'
+local lapp  = require 'pl.lapp'
 
+
+lapp.add_type  ('amount', 'number',
+                function (v)
+                  lapp.assert (v > 0, 'amount must be > 0!')
+                end)
+local args = lapp
+[[
+Poloniex Lending Bot
+Usage: poloniex_lendingbot [options] <currency>
+
+options:
+  --frontrun (amount)   Frontrun other offers w/ at least this amount.
+  --quantity (amount)   Amount to lend out per offer.
+
+  <currency> (btc|bts|clam|doge|dash|ltc|maid|str|xmr|xrp|eth|fct)
+]]
 
 local make_clearlog = function (logname, beat)
   local logger = make_log (logname)
@@ -85,7 +102,9 @@ local compute_weightedavg = function (lendingbook)
   return sum / volume
 end
 
-local lend_quantity = 2.0
+local lend_quantity = args.quantity
+local wallfactor    = args.frontrun
+local crypto        = args.currency:upper ()
 local place_newoffers = function (context)
   if #context.openoffers > 0 then return end
 
@@ -99,7 +118,7 @@ local place_newoffers = function (context)
     seq (lendingbook)
     :filter (function () return context.balance > lend_quantity end)
     :map (markgaps (lendingbook[1].rate))
-    :filter (function (v) return v.amount*1 > 3 end)
+    :filter (function (v) return v.amount*1 > wallfactor end)
     :map (function (v)
             v.rate = tosatoshi (v.rate) - v.gap
             v.rate = tostring (v.rate / 1E8)
@@ -116,7 +135,7 @@ local place_newoffers = function (context)
     :take (newoffer_count)
     :map (function (v)
             sleep (250)
-            local offerstat, errmsg = lendapi:placeoffer ("BTC", v.rate, lend_quantity)
+            local offerstat, errmsg = lendapi:placeoffer (crypto, v.rate, lend_quantity)
             if errmsg then return errmsg end
 
             assert (offerstat.success == 1)
@@ -180,7 +199,7 @@ local function log_changes (strfmt)
   end
 end
 
-local show_balance      = log_changes "loanable balance: %.8f"
+local show_balance      = log_changes (crypto .. " balance: %.8f")
 local show_activecount  = log_changes "%d active loans"
 local show_opencount    = log_changes "%d open offers"
 
@@ -241,9 +260,9 @@ local function bot ()
   local run_bot =
   {
     [relaxed] = delay (function ()
-      local openoffers    = assert (lendapi:openoffers "BTC")
-      local activeoffers  = assert (lendapi:activeoffers "BTC")
-      local balance       = assert (lendapi:balance "BTC").BTC + 0
+      local openoffers    = assert (lendapi:openoffers (crypto))
+      local activeoffers  = assert (lendapi:activeoffers (crypto))
+      local balance       = assert (lendapi:balance (crypto))[crypto] + 0
 
       check_activeoffers (activeoffers)
       show_balance (balance)
@@ -255,10 +274,10 @@ local function bot ()
     end, 30*seconds),
 
     [lively] = delay (function ()
-      lendingcontext.lendingbook    = assert (publicapi:lendingbook "BTC")
-      lendingcontext.openoffers     = assert (lendapi:openoffers "BTC")
-      lendingcontext.activeoffers   = assert (lendapi:activeoffers "BTC")
-      lendingcontext.balance        = assert (lendapi:balance "BTC").BTC + 0
+      lendingcontext.lendingbook    = assert (publicapi:lendingbook (crypto))
+      lendingcontext.openoffers     = assert (lendapi:openoffers (crypto))
+      lendingcontext.activeoffers   = assert (lendapi:activeoffers (crypto))
+      lendingcontext.balance        = assert (lendapi:balance (crypto))[crypto] + 0
 
       check_activeoffers (lendingcontext.activeoffers)
       show_lendinginfo (lendingcontext)
