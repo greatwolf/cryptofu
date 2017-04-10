@@ -195,10 +195,11 @@ local function just_now () return os.clock () * seconds end
 
 local function app_loop (func, throttle_delay)
   local start, elapse
-  repeat
+  local task = function ()
     start = just_now ()
     func ()
     elapse = just_now () - start
+
     if throttle_delay > elapse then
       local sleep_delay = throttle_delay - elapse
       assert (0 < sleep_delay and sleep_delay <= throttle_delay,
@@ -206,7 +207,18 @@ local function app_loop (func, throttle_delay)
       sleep (sleep_delay)
     end
     pulse:tick ()
-  until false
+  end
+
+  local status, errmsg
+  local quit_func
+  repeat
+    status, errmsg = xpcall(task, debug.traceback)
+
+    if not status then
+      quit_func = errmsg:match "interrupted!"
+      logcrit (quit_func and "got quit signal!" or errmsg)
+    end
+  until quit_func
 end
 
 local function delay (f, msec)
@@ -265,8 +277,6 @@ end
 
 
 local main = function () app_loop (bot(), 0.5*seconds) end
-local status, errmsg = xpcall (main, debug.traceback)
-local quit_bot = (not status and errmsg:match '.+:%d+: interrupted!')
-log (quit_bot and "got quit signal!" or errmsg)
+main ()
 
 log 'quitting...'
