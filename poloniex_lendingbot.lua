@@ -153,7 +153,7 @@ local place_newoffers = function (context)
               end)
 
   if log_weightedavg then
-    log (("volume weighted average rate: %.6f%%"):format (avgrate * 100))
+    loginfo (("volume weighted average rate: %.6f%%"):format (avgrate * 100))
   end
 end
 
