@@ -27,9 +27,9 @@ options:
 
 local make_clearlog = function (logname, beat)
   local logger = make_log (logname)
-  return function (...)
+  return function (msg)
     beat:clear ()
-    return logger (...)
+    return logger (msg)
   end
 end
 
@@ -69,24 +69,6 @@ local function tounix_time (timestr)
 end
 
 local utc_now = function () return tounix_time (os.date '!%Y-%m-%d %H:%M:%S') end -- UTC
-local cancel_openoffers = function (context)
-  local openoffers  = context.openoffers
-  local r =
-    seq (openoffers)
-    :map (function (v)
-            v.date = tounix_time (v.date)
-            return v
-          end)
-    :filter  (function (v)
-                return (utc_now () - v.date) > 180
-              end)
-    :foreach (function (v)
-                log (("cancelling offer: #%s"):format (v.id))
-                local r, errmsg = lendapi:canceloffer (v.id)
-                log (errmsg or r.message)
-                sleep (250)
-              end)
-end
 
 local compute_weightedavg = function (lendingbook)
   assert (#lendingbook > 0)
@@ -105,12 +87,32 @@ end
 local lend_quantity = args.quantity
 local wallfactor    = args.frontrun
 local crypto        = args.currency:upper ()
+local cancel_openoffers = function (context)
+  local openoffers  = context.openoffers
+  local r =
+    seq (openoffers)
+    :map (function (v)
+            v.date = tounix_time (v.date)
+            return v
+          end)
+    :filter  (function (v)
+                return (utc_now () - v.date) > 180
+              end)
+    :map (function (v)
+            sleep (250)
+            log (("cancelling offer: %.8f @%.6f%%"):format (v.amount, v.rate * 100))
+            local r, errmsg = lendapi:canceloffer (v.id)
+            local status = "%s #%s"
+            return errmsg or (status:format (r.message, v.id))
+          end)
+    :foreach (log)
+end
+
 local place_newoffers = function (context)
   if #context.openoffers > 0 then return end
 
   local newoffer_count = 5
   local seen = {}
-  local log_weightedavg = false
   local lendingbook = context.lendingbook.offers
   local avgrate = compute_weightedavg (lendingbook)
 
@@ -135,26 +137,20 @@ local place_newoffers = function (context)
     :take (newoffer_count)
     :map (function (v)
             sleep (250)
+            log (("placing offer: %.8f @%.6f%%"):format (lend_quantity, v.rate * 100))
             local offerstat, errmsg = lendapi:placeoffer (crypto, v.rate, lend_quantity)
             if errmsg then return errmsg end
 
             assert (offerstat.success == 1)
             context.balance = context.balance - lend_quantity
 
-            local status = "%s #%d, %.8f @%.6f%%"
+            local status = "%s #%s"
             return status:format (offerstat.message,
-                                  offerstat.orderID,
-                                  lend_quantity,
-                                  v.rate * 100)
+                                  offerstat.orderID)
           end)
-    :foreach (function (status)
-                log (status)
-                log_weightedavg = true
-              end)
+    :foreach (log)
 
-  if log_weightedavg then
-    loginfo (("volume weighted average rate: %.6f%%"):format (avgrate * 100))
-  end
+  loginfo (("volume weighted average rate: %.6f%%"):format (avgrate * 100))
 end
 
 local prev_activeid = set ()
