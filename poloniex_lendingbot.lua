@@ -136,23 +136,24 @@ local place_newoffers = function (context)
               end)
     :filter (function (v) return v.rate + 0 > avgrate * 0.995 end)
     :take (newoffer_count)
+    :map (function (v)
+            sleep (250)
+            log (("placing offer: %.8f @%.6f%%"):format (lend_quantity, v.rate * 100))
+            local offerstat, errmsg = lendapi:placeoffer (crypto, v.rate, lend_quantity)
+            if errmsg then return errmsg end
+
+            assert (offerstat.success == 1)
+            context.balance = context.balance - lend_quantity
+
+            local status = "%s #%s"
+            return status:format (offerstat.message,
+                                  offerstat.orderID)
+          end)
+    :map (function (v)
+            log (v)
+            return v
+          end)
     :copy ()
-
-  seq (r)
-  :map (function (v)
-          sleep (250)
-          log (("placing offer: %.8f @%.6f%%"):format (lend_quantity, v.rate * 100))
-          local offerstat, errmsg = lendapi:placeoffer (crypto, v.rate, lend_quantity)
-          if errmsg then return errmsg end
-
-          assert (offerstat.success == 1)
-          context.balance = context.balance - lend_quantity
-
-          local status = "%s #%s"
-          return status:format (offerstat.message,
-                                offerstat.orderID)
-        end)
-  :foreach (log)
 
   -- only log this if there's at least one new order placed
   seq (r)
