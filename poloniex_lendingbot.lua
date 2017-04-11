@@ -40,9 +40,10 @@ local loginfo = make_clearlog ("INFO", pulse)
 local logcrit = make_clearlog ("CRITICAL", pulse)
 local auth    = apikeys.poloniex
 local lendapi = publicapi.lendingapi (auth.key, auth.secret)
-publicapi.lendingbook = make_retry (publicapi.lendingbook, 3, logcrit, "%w+")
-lendapi.authquery     = make_retry (lendapi.authquery,     7, logcrit,
-                                    "Bad Gateway", "wantread", "closed", "timeout")
+local unpack = unpack or table.unpack
+local retry_profile = { 3, logcrit, "HTTP/1%.1 %d+ %w+", "wantread", "closed", "timeout" }
+publicapi.lendingbook = make_retry (publicapi.lendingbook, unpack (retry_profile))
+lendapi.authquery     = make_retry (lendapi.authquery,     unpack (retry_profile))
 
 local tosatoshi = function (v) return tostring(v * 1E8) * 1 end
 local function markgaps (initial)
