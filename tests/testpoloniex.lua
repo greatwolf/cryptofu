@@ -148,6 +148,7 @@ utest.group "poloniex_lendingapi"
     assert (lendapi.placeoffer)
     assert (lendapi.canceloffer)
     assert (lendapi.openoffers)
+    assert (lendapi.activeoffers)
   end,
 
   test_placeoffer = function ()
