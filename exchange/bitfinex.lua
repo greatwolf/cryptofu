@@ -82,7 +82,7 @@ end
 
 function bitfinex_publicapi:lendingbook (currency)
   local cmd = "/lendbook/%s/?"
-  local parm = { limit_bids = tostring (0), limit_asks = tostring (10) }
+  local parm = { limit_bids = tostring (0) }
   local r, errmsg = bitfinex_publicquery (self, cmd:format (currency), parm)
   if not r then return r, errmsg end
   tablex.transform (function (v)
@@ -150,7 +150,7 @@ function bitfinex_tradingapi:openorders (market1, market2)
 end
 
 local bitfinex_lendingapi = {}
-function bitfinex_lendingapi:placeoffer (currency, rate, quantity, duration, autorenew)
+function bitfinex_lendingapi:placeoffer (currency, rate, quantity, duration)
   local parm =
     {
       currency  = currency,
