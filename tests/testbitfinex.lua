@@ -88,8 +88,8 @@ utest.group "bitfinex_tradingapi"
   test_buy = function ()
     local r, errmsg = tradeapi:buy ("BTC", "USD", 0.15, 1)
 
-    assert (not errmsg and r, errmsg or r)
-    assert (r.order_id and r.side == "buy")
+    assert ((r and r.order_id and r.side == "buy") or
+            errmsg:match "Invalid order: not enough", errmsg)
     if r then
       test_orders:push (assert (r.order_id))
     end
@@ -98,8 +98,8 @@ utest.group "bitfinex_tradingapi"
   test_sell = function ()
     local r, errmsg = tradeapi:sell ("BTC", "USD", 10000.9, 0.01)
 
-    assert (not errmsg and r, errmsg or r)
-    assert (r.order_id and r.side == "sell")
+    assert ((r and r.order_id and r.side == "sell") or
+            errmsg:match "Invalid order: not enough", errmsg)
     if r then
       test_orders:push (assert (r.order_id))
     end
@@ -130,7 +130,8 @@ utest.group "bitfinex_lendingapi"
   test_placeoffer = function ()
     local r, errmsg = lendapi:placeoffer ("BTC", 0.02, 0.001, 3)
 
-    assert (errmsg:match "Invalid offer: incorrect amount" or (r and r.offer_id), errmsg)
+    assert ((r and r.offer_id) or
+            errmsg:match "Invalid offer: not enough", errmsg)
     if r then
       test_offers:push (assert (r.offer_id))
     end
