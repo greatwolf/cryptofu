@@ -173,6 +173,7 @@ utest.group "poloniex_lendingapi"
     if #r > 0 then
       assert (r[1].currency == "BTC")
       assert (r[1].amount + 0 > 0)
+      assert (r[1].rate + 0 > 0)
     end
   end,
 }
