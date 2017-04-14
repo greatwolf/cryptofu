@@ -38,8 +38,7 @@ utest.group "bitfinex_publicapi"
 
   test_bogusmarket = function ()
     local r, errmsg = publicapi:orderbook ("BTC", "___")
-    assert (type(r) == 'table', r)
-    assert (r.message == "Unknown symbol", r.message)
+    assert (not r and errmsg == "Unknown symbol", errmsg)
   end,
 
   test_mixcasequery = function ()

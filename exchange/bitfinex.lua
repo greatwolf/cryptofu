@@ -30,9 +30,9 @@ end
 local bitfinex_publicquery = function (self, cmd, parm)
   parm = parm or {}
 
-  local res = apiquery.getrequest (url, cmd .. urlencode_parm (parm))
-  if res[1] == "error" then
-    return nil, table.concat(res, " ")
+  local res, c = apiquery.getrequest (url, cmd .. urlencode_parm (parm))
+  if c ~= 200 then
+    return nil, res.message
   end
   return res
 end
@@ -137,7 +137,7 @@ function bitfinex_lendingapi:placeoffer (currency, rate, quantity, duration, aut
     {
       currency  = currency,
       amount    = tostring (quantity),
-      rate      = tostring (rate),
+      rate      = tostring (rate * 365),
       period    = duration or 2,
       direction = "lend"
     }
