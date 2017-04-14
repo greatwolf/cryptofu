@@ -31,9 +31,11 @@ utest.group "poloniex_publicapi"
   test_lendingbook = function ()
     local r = assert (publicapi:lendingbook "BTC")
     
-    local bottom_offer = #r.offers
-    assert (r.offers and r.demands)
-    assert (r.offers[1].rate < r.offers[bottom_offer].rate)
+    local bottom_offer = #r
+    assert (r)
+    assert (r[1].rate < r[bottom_offer].rate)
+    assert (r[1].rate > 0)
+    assert (r[1].amount > 0)
   end,
 
   test_boguslendingbook = function ()

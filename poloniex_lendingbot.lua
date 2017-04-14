@@ -75,7 +75,7 @@ local compute_weightedavg = function (lendingbook)
   assert (#lendingbook > 0)
   local volume = seq (lendingbook)
                   :sum (function (v)
-                          return v.amount + 0
+                          return v.amount
                         end)
   local sum = seq (lendingbook)
                 :sum (function (v)
@@ -114,17 +114,17 @@ local place_newoffers = function (context)
 
   local newoffer_count = 5
   local seen = {}
-  local lendingbook = context.lendingbook.offers
+  local lendingbook = context.lendingbook
   local avgrate = compute_weightedavg (lendingbook)
 
   local r =
     seq (lendingbook)
     :filter (function () return context.balance > lend_quantity end)
     :map (markgaps (lendingbook[1].rate))
-    :filter (function (v) return v.amount*1 > wallfactor end)
+    :filter (function (v) return v.amount > wallfactor end)
     :map (function (v)
             v.rate = tosatoshi (v.rate) - v.gap
-            v.rate = tostring (v.rate / 1E8)
+            v.rate = v.rate / 1E8
             v.gap = nil
             return v
           end)
@@ -134,7 +134,7 @@ local place_newoffers = function (context)
 
                 return unique
               end)
-    :filter (function (v) return v.rate + 0 > avgrate * 0.995 end)
+    :filter (function (v) return v.rate > avgrate * 0.99 end)
     :take (newoffer_count)
     :map (function (v)
             sleep (250)

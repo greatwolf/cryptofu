@@ -66,7 +66,13 @@ end
 function poloniex_publicapi:lendingbook (currency)
   local r = poloniex_publicquery (self, "returnLoanOrders", {currency = currency})
   if r.error then return nil, r.error end
-  return r
+  tablex.transform (function (v)
+                      v.rate   = tonumber (v.rate)
+                      v.amount = tonumber (v.amount)
+                      return v
+                    end,
+                    r.offers)
+  return r.offers
 end
 
 local poloniex_lendingapi = {}
