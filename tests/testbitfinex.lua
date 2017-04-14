@@ -12,6 +12,9 @@ utest.group "bitfinex_publicapi"
   test_publicapinames = function ()
     assert (publicapi.orderbook)
     assert (publicapi.markethistory)
+    assert (publicapi.tradingapi)
+    assert (publicapi.lendingbook)
+    assert (publicapi.lendingapi)
 
     -- unauthenticated access should only contain public functions
     assert (not publicapi.buy)
@@ -23,6 +26,22 @@ utest.group "bitfinex_publicapi"
     assert (not publicapi.placeoffer)
     assert (not publicapi.canceloffer)
     assert (not publicapi.openoffers)
+  end,
+
+  test_lendingbook = function ()
+    local r = assert (publicapi:lendingbook "BTC")
+    
+    local bottom_offer = #r
+    assert (r)
+    assert (r[1].rate < r[bottom_offer].rate)
+    assert (r[1].rate > 0)
+    assert (r[1].amount > 0)
+  end,
+
+  test_boguslendingbook = function ()
+    local r, errmsg = publicapi:lendingbook "___"
+
+    assert (not r and errmsg == "Unknown currency", errmsg)
   end,
 
   test_orderbook = function ()

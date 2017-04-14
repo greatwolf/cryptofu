@@ -76,6 +76,20 @@ function bitfinex_publicapi:markethistory (market1, market2)
   return bitfinex_publicquery (self, cmd:format (sym))
 end
 
+function bitfinex_publicapi:lendingbook (currency)
+  local cmd = "/lendbook/%s/?"
+  local parm = { limit_bids = tostring (0), limit_asks = tostring (10) }
+  local r, errmsg = bitfinex_publicquery (self, cmd:format (currency), parm)
+  if not r then return r, errmsg end
+  tablex.transform (function (v)
+                      v.rate   = tonumber (v.rate) / 365
+                      v.amount = tonumber (v.amount)
+                      return v
+                    end,
+                    r.asks)
+  return r.asks
+end
+
 local bitfinex_tradingapi = {}
 function bitfinex_tradingapi:balance ()
   local r, errmsg = self.authquery ("/balances")
