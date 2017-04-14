@@ -149,25 +149,19 @@ utest.group "bitfinex_lendingapi"
   test_placeoffer = function ()
     local r, errmsg = lendapi:placeoffer ("BTC", 0.02, 0.001, 3)
 
-    assert ((r and r.offer_id) or
+    assert ((r and r.orderID) or
             errmsg:match "Invalid offer: not enough", errmsg)
     if r then
-      test_offers:push (assert (r.offer_id))
+      test_offers:push (assert (r.orderID))
     end
   end,
 
   test_lendingbalance = function ()
     local r, errmsg = assert (lendapi:balance ())
 
-    assert (type(r) == 'table')
-    assert (#r > 0)
-    tablex.foreachi (r, function (v)
-      assert (type(v.type) == 'string')
-      assert (v.type == "deposit")
-      assert (type(v.currency) == 'string')
-      assert (v.amount and v.available)
-      assert (not (v.amount + v.available < 0))
-    end)
+    local k, v = next (r)
+    assert (type(k) == 'string')
+    assert (not (v + 0 < 0))
   end,
 
   test_activeoffersquery = function ()
@@ -178,6 +172,7 @@ utest.group "bitfinex_lendingapi"
     if #r > 0 then
       assert (r[1].currency == "BTC")
       assert (r[1].amount + 0 > 0)
+      assert (r[1].rate + 0 > 0)
     end
   end,
 }
@@ -200,7 +195,10 @@ utest.group "bitfinex_orderlist"
     local r = assert (lendapi:openoffers "USD")
 
     assert (type(r) == 'table')
-    tablex.foreachi (r, function (n) assert (n.id and n.currency == "USD") end)
+    tablex.foreachi (r, function (n)
+                          assert (n.id and n.currency == "USD")
+                          assert (type(n.timestamp) == 'number')
+                        end)
   end,
 }
 
@@ -228,6 +226,23 @@ utest.group "bitfinex_cancels"
     local cancelcount = r.result:match "All %((.-)%) submitted for cancellation;"
     assert (tonumber (cancelcount) == test_orders:size ())
     test_orders:clear ()
+  end,
+
+  test_cancelinvalidoffer = function ()
+    local r, errmsg = lendapi:canceloffer ("BAD_OFFERERNUMBER")
+    assert (errmsg:match "offer_id should be an integer", errmsg)
+  end,
+
+  test_canceloffer = function ()
+    if test_offers:empty () then return end
+
+    assert (not test_offers:empty (), "No test offers to cancel.")
+    while not test_offers:empty () do
+      local top = test_offers:top ()
+      r = assert (lendapi:canceloffer (top))
+      assert (r.success == 1)
+      test_offers:pop ()
+    end
   end,
 }
 

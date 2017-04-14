@@ -37,6 +37,10 @@ local bitfinex_publicquery = function (self, cmd, parm)
   return res
 end
 
+local tounix_utc = function (t)
+  return 3600*7 + t
+end
+
 -- The way finex handles market symbols is a bit annoying.
 -- Their api doesn't have a canonical format nor
 -- is it passed as a key-value param.
@@ -155,11 +159,21 @@ function bitfinex_lendingapi:placeoffer (currency, rate, quantity, duration, aut
       period    = duration or 2,
       direction = "lend"
     }
-  return self.authquery ("/offer/new", parm)
+  local r, errmsg = self.authquery ("/offer/new", parm)
+  if not r then return r, errmsg end
+  r.success = 1
+  r.orderID = r.id
+  r.message = "Loan order placed."
+  return r
 end
 
 function bitfinex_lendingapi:canceloffer (orderid)
-  return self.authquery ("/offer/cancel", {offer_id = orderid})
+  local r, errmsg = self.authquery ("/offer/cancel", {offer_id = orderid})
+  if not r then return r, errmsg end
+  r.success = 1
+  r.message = "Loan offer canceled."
+  r.timestamp = tounix_utc (r.timestamp)
+  return r
 end
 
 function bitfinex_lendingapi:openoffers (currency)
@@ -169,7 +183,11 @@ function bitfinex_lendingapi:openoffers (currency)
                           return v.currency == currency and
                                  v.direction == "lend"
                         end)
-  tablex.foreach (r, function (v) v.rate = v.rate / 365 end)
+  tablex.foreach  (r, function (v)
+                        v.amount, v.remaining_amount = v.remaining_amount
+                        v.timestamp = tounix_utc (v.timestamp)
+                        v.rate = v.rate / 365
+                      end)
   return r
 end
 
@@ -178,7 +196,7 @@ function bitfinex_lendingapi:activeoffers (currency)
   if not r then return r, errmsg end
   r = tablex.filter (r, function (v)
                           return v.currency == currency and
-                                 v.direction == "lend"
+                                 v.status == "ACTIVE"
                         end)
   tablex.foreach (r, function (v) v.rate = v.rate / 365 end)
   return r
@@ -187,7 +205,13 @@ end
 function bitfinex_lendingapi:balance ()
   local r, errmsg = self.authquery ("/balances")
   if not r then return r, errmsg end
-  return tablex.filter (r, function (v) return v.type == "deposit" end)
+  r = tablex.filter (r, function (v) return v.type == "deposit" end)
+  tablex.foreachi (r, function (v)
+                        local currency = v.currency:upper ()
+                        r[currency] = v.available
+                      end)
+  tablex.clear (r)
+  return r
 end
 
 local make_authself = function (apikey, apisecret)
