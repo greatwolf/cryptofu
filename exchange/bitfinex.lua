@@ -85,13 +85,27 @@ function bitfinex_publicapi:lendingbook (currency)
   local parm = { limit_bids = tostring (0) }
   local r, errmsg = bitfinex_publicquery (self, cmd:format (currency), parm)
   if not r then return r, errmsg end
+  assert (#r.asks > 0)
+  r = r.asks
   tablex.transform (function (v)
-                      v.rate   = tonumber (v.rate) / 365
+                      v.rate = v.rate / 365 * 1E6
+                      v.rate = math.floor (v.rate + 0.5) * 1E-6
                       v.amount = tonumber (v.amount)
                       return v
-                    end,
-                    r.asks)
-  return r.asks
+                    end, r)
+
+  -- Finex returns multiple entries with common rates
+  -- aggregate those amounts together
+  r[1] = { r[1] }
+  return tablex.reduce (function (lhs, rhs)
+                          local last = lhs[#lhs]
+                          if last.rate == rhs.rate then
+                            last.amount = last.amount + rhs.amount
+                          else
+                            table.insert (lhs, rhs)
+                          end
+                          return lhs
+                        end, r)
 end
 
 local bitfinex_tradingapi = {}
