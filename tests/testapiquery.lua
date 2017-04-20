@@ -45,6 +45,15 @@ utest.group "apiquery"
     assert (errmsg:match "connection refused", errmsg)
   end,
 
+  test_timeoutgetresponse = function ()
+    local start = os.time ()
+    local r, errmsg = pcall (apiquery.getrequest, "https://10.255.255.1")
+    local elapse = os.time () - start
+    assert (not r and errmsg)
+    assert (errmsg:match "timeout", errmsg)
+    assert (elapse >= 3)
+  end,
+
   test_simplepostrequest = function ()
     local r = apiquery.postrequest (url, "/post")
     assert (r.url)
@@ -68,6 +77,15 @@ utest.group "apiquery"
     local r, errmsg = pcall (apiquery.postrequest, url, "/xml")
     assert (not r and errmsg)
     assert (errmsg:match "405 METHOD NOT ALLOWED", errmsg)
+  end,
+
+  test_timeoutpostresponse = function ()
+    local start = os.time ()
+    local r, errmsg = pcall (apiquery.postrequest, "https://10.255.255.1")
+    local elapse = os.time () - start
+    assert (not r and errmsg)
+    assert (errmsg:match "timeout", errmsg)
+    assert (elapse >= 3)
   end,
 }
 

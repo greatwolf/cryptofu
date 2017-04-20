@@ -1,3 +1,4 @@
+local socket  = require 'socket'
 local ltn12   = require 'ltn12'
 local https   = require 'ssl.https'
 local json    = require 'dkjson'
@@ -5,6 +6,7 @@ local tablex  = require 'pl.tablex'
 local z       = require 'zlib' -- for gzip
 
 
+socket.http.TIMEOUT = 3 -- set timeout for http request
 local https_request = function (method, urlbase, urlpath, headers, postdata)
   urlpath = urlpath or ""
   local req_headers =
