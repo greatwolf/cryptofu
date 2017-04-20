@@ -82,7 +82,7 @@ end
 
 function bitfinex_publicapi:lendingbook (currency)
   local cmd = "/lendbook/%s/?"
-  local parm = { limit_bids = tostring (0) }
+  local parm = { limit_bids = tostring (0), limit_asks = tostring (200) }
   local r, errmsg = bitfinex_publicquery (self, cmd:format (currency), parm)
   if not r then return r, errmsg end
   assert (#r.asks > 0)
