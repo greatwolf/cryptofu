@@ -13,14 +13,22 @@ lapp.add_type  ('amount', 'number',
                 function (v)
                   lapp.assert (v > 0, 'amount must be > 0!')
                 end)
+lapp.add_type  ('seconds', 'number',
+                function (v)
+                  lapp.assert (v >= 30, 'must be at least 30 seconds!')
+                end)
 local args = lapp
 [[
 Poloniex Lending Bot
 Usage: poloniex_lendingbot [options] <currency>
 
 options:
-  --frontrun (amount)   Frontrun other offers w/ at least this amount.
-  --quantity (amount)   Amount to lend out per offer.
+  --frontrun (amount)       Frontrun other offers w/ at least this amount.
+  --quantity (amount)       Amount to lend out per offer.
+  --minrate  (default 0.0)  Minimum rate the bot will lend at.
+  --offerttl (seconds default 180)
+                            Seconds to keep offers alive for before the bot
+                            cancels and repositions.
 
   <currency> (btc|bts|clam|doge|dash|ltc|maid|str|xmr|xrp|eth|fct)
 ]]
@@ -87,6 +95,8 @@ end
 
 local lend_quantity = args.quantity
 local wallfactor    = args.frontrun
+local minrate       = math.max (args.minrate, 0)
+local offerttl      = args.offerttl
 local crypto        = args.currency:upper ()
 local cancel_openoffers = function (context)
   local openoffers  = context.openoffers
@@ -97,7 +107,7 @@ local cancel_openoffers = function (context)
             return v
           end)
     :filter  (function (v)
-                return (utc_now () - v.date) > 180
+                return (utc_now () - v.date) > offerttl
               end)
     :map (function (v)
             sleep (250)
@@ -135,6 +145,7 @@ local place_newoffers = function (context)
                 return unique
               end)
     :filter (function (v) return v.rate > avgrate * 0.99 end)
+    :filter (function (v) return v.rate * 1E2 > minrate end)
     :take (newoffer_count)
     :map (function (v)
             sleep (250)
