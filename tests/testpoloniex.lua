@@ -163,9 +163,15 @@ utest.group "poloniex_lendingapi"
   test_lendingbalance = function ()
     local r = assert (lendapi:balance ())
 
-    local k, v = next (r)
-    assert (type(k) == 'string')
-    assert (v + 0 > 0)
+    -- balances should be in associative part of table
+    assert (#r == 0)
+    local isempty = true
+    for k, v in pairs (r) do
+      assert (type(k) == 'string')
+      assert (v >= 0)
+      isempty = false
+    end
+    assert (not isempty)
   end,
 
   test_activeoffersquery = function ()

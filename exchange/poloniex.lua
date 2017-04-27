@@ -114,7 +114,13 @@ end
 function poloniex_lendingapi:balance ()
   local r = self.authquery ("returnAvailableAccountBalances", {account = "lending"})
   if r.error then return nil, r.error end
-  return r.lending
+  local balance_template =
+  {
+    BTC = 0, BTS = 0, CLAM = 0, DOGE = 0, DASH = 0, MAID = 0,
+    LTC = 0, STR = 0, XMR = 0, XRP = 0, ETH = 0, FCT = 0,
+  }
+  tablex.transform (tonumber, r.lending)
+  return tablex.update (balance_template, r.lending)
 end
 
 local poloniex_tradingapi = {}

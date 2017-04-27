@@ -280,7 +280,7 @@ local function bot ()
     [relaxed] = delay (function ()
       local openoffers    = assert (lendapi:openoffers (crypto))
       local activeoffers  = assert (lendapi:activeoffers (crypto))
-      local balance       = assert (lendapi:balance (crypto))[crypto] + 0
+      local balance       = assert (lendapi:balance ())[crypto]
 
       check_activeoffers (activeoffers)
       show_balance (balance)
@@ -295,7 +295,7 @@ local function bot ()
       lendingcontext.lendingbook    = assert (publicapi:lendingbook (crypto))
       lendingcontext.openoffers     = assert (lendapi:openoffers (crypto))
       lendingcontext.activeoffers   = assert (lendapi:activeoffers (crypto))
-      lendingcontext.balance        = assert (lendapi:balance (crypto))[crypto] + 0
+      lendingcontext.balance        = assert (lendapi:balance ())[crypto]
 
       check_activeoffers (lendingcontext.activeoffers)
       show_lendinginfo (lendingcontext)
