@@ -21,7 +21,7 @@ local function poloniex_authquery (self, cmd, parm)
     -- if it's just a bad nonce, update nonce and retry
     local new_nonce = res.error:match "Nonce must be greater than (%d+)%."
     if new_nonce then
-      nonce (new_nonce + 0)
+      nonce (new_nonce)
       return poloniex_authquery (self, cmd, parm)
     end
   end

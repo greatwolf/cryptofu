@@ -48,6 +48,7 @@ local epoch      = os.time { year = 2010, month = 1, day = 1 }
 local now        = function () return os.time () - epoch end
 local next_nonce = now() * 2
 local function get_nonce (init_time)
+  init_time = tonumber (init_time)
   if init_time then
     next_nonce = init_time < 0 and (now() * 2) or init_time
   end
