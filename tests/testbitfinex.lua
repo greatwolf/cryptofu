@@ -150,7 +150,8 @@ utest.group "bitfinex_lendingapi"
     local r, errmsg = lendapi:placeoffer ("BTC", 0.02, 0.001, 3)
 
     assert ((r and r.orderID) or
-            errmsg:match "Invalid offer: not enough", errmsg)
+            errmsg:match "Invalid offer: not enough" or
+            errmsg:match "Invalid offer: incorrect amount", errmsg)
     if r then
       test_offers:push (assert (r.orderID))
     end
