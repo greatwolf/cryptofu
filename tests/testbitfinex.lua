@@ -85,16 +85,12 @@ utest.group "bitfinex_tradingapi"
   end,
 
   test_balance = function ()
-    local r, errmsg = assert (tradeapi:balance ())
+    local r = assert (tradeapi:balance ())
 
     assert (type(r) == 'table')
-    assert (#r > 0)
-    tablex.foreachi (r, function (v)
-      assert (type(v.type) == 'string')
-      assert (v.type == "exchange")
-      assert (type(v.currency) == 'string')
-      assert (v.amount and v.available)
-      assert (not (v.amount + v.available < 0))
+    tablex.foreach (r, function (v, k)
+      assert (type(k) == 'string')
+      assert (v >= 0)
     end)
   end,
 
@@ -158,11 +154,17 @@ utest.group "bitfinex_lendingapi"
   end,
 
   test_lendingbalance = function ()
-    local r, errmsg = assert (lendapi:balance ())
+    local r = assert (lendapi:balance ())
 
-    local k, v = next (r)
-    assert (type(k) == 'string')
-    assert (not (v + 0 < 0))
+    -- balances should be in associative part of table
+    assert (#r == 0)
+    local isempty = true
+    for k, v in pairs (r) do
+      assert (type(k) == 'string')
+      assert (v >= 0)
+      isempty = false
+    end
+    assert (not isempty)
   end,
 
   test_activeoffersquery = function ()

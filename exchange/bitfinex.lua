@@ -112,7 +112,13 @@ local bitfinex_tradingapi = {}
 function bitfinex_tradingapi:balance ()
   local r, errmsg = self.authquery ("/balances")
   if not r then return r, errmsg end
-  return tablex.filter (r, function (v) return v.type == "exchange" end)
+  r = tablex.filter (r, function (v) return v.type == "exchange" end)
+  tablex.foreachi (r, function (v)
+                        local currency = v.currency:upper ()
+                        r[currency] = tonumber (v.available)
+                      end)
+  tablex.clear (r)
+  return r
 end
 
 function bitfinex_tradingapi:tradehistory (market1, market2, start_period, stop_period)
@@ -222,7 +228,7 @@ function bitfinex_lendingapi:balance ()
   r = tablex.filter (r, function (v) return v.type == "deposit" end)
   tablex.foreachi (r, function (v)
                         local currency = v.currency:upper ()
-                        r[currency] = v.available
+                        r[currency] = tonumber (v.available)
                       end)
   tablex.clear (r)
   return r
