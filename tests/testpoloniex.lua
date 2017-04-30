@@ -32,10 +32,10 @@ utest.group "poloniex_publicapi"
     local r = assert (publicapi:lendingbook "BTC")
     
     local bottom_offer = #r
-    assert (r)
-    assert (r[1].rate < r[bottom_offer].rate)
-    assert (r[1].rate > 0)
+    assert (type(r) == 'table')
     assert (r[1].amount > 0)
+    assert (r[1].rate < r[bottom_offer].rate)
+    assert (0.005 < r[1].rate and r[1].rate < 5.0, r[1].rate)
   end,
 
   test_boguslendingbook = function ()
@@ -152,7 +152,16 @@ utest.group "poloniex_lendingapi"
   end,
 
   test_placeoffer = function ()
-    local r, errmsg = lendapi:placeoffer ("BTC", 0.02, 0.001, 3, false)
+    local r, errmsg = lendapi:placeoffer ("BTC", 2.0, 0.001, 3, false)
+
+    assert (errmsg == "Amount must be at least 0.01." or (r and r.orderID), errmsg)
+    if r then
+      test_offers:push (assert (r.orderID))
+    end
+  end,
+
+  test_placeoffermixcase = function ()
+    local r, errmsg = lendapi:placeoffer ("BtC", 2.0, 0.001, 3, false)
 
     assert (errmsg == "Amount must be at least 0.01." or (r and r.orderID), errmsg)
     if r then
@@ -180,7 +189,7 @@ utest.group "poloniex_lendingapi"
     if #r > 0 then
       assert (r[1].currency == "BTC")
       assert (r[1].amount + 0 > 0)
-      assert (r[1].rate + 0 > 0)
+      assert (0.005 < r[1].rate and r[1].rate < 5.0, r[1].rate)
     end
   end,
 }
@@ -198,7 +207,10 @@ utest.group "poloniex_orderlist"
     local r = assert (lendapi:openoffers "BTC")
 
     assert (type(r) == 'table')
-    tablex.foreachi (r, function (n) assert (n.id) end)
+    tablex.foreachi (r, function (n)
+                          assert (n.id)
+                          assert (0.005 < n.rate and n.rate < 5.0, n.rate)
+                        end)
   end,
 }
 

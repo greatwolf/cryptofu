@@ -67,7 +67,7 @@ function poloniex_publicapi:lendingbook (currency)
   local r = poloniex_publicquery (self, "returnLoanOrders", {currency = currency})
   if r.error then return nil, r.error end
   tablex.transform (function (v)
-                      v.rate   = tonumber (v.rate)
+                      v.rate   = v.rate * 1E2
                       v.amount = tonumber (v.amount)
                       return v
                     end,
@@ -79,8 +79,8 @@ local poloniex_lendingapi = {}
 function poloniex_lendingapi:placeoffer (currency, rate, quantity, duration, autorenew)
   local parm =
     {
-      currency = currency,
-      lendingRate = rate,
+      currency = currency:upper (),
+      lendingRate = rate * 1E-2,
       amount = quantity,
       duration = duration or 2,
       autoRenew = autorenew and 1 or 0
@@ -99,15 +99,25 @@ end
 function poloniex_lendingapi:openoffers (currency)
   local r = self.authquery ("returnOpenLoanOffers")
   if r.error then return nil, r.error end
+  tablex.foreach (r,  function (n)
+                        tablex.transform (function (v)
+                                            v.rate = v.rate * 1E2
+                                            return v
+                                          end, n)
+                      end)
   if not currency then return r end
-  return r[currency] or {}
+  return r[currency:upper ()] or {}
 end
 
 function poloniex_lendingapi:activeoffers (currency)
   local r = self.authquery ("returnActiveLoans")
   if r.error then return nil, r.error end
-  r = r.provided
+  r = tablex.map (function (v)
+                    v.rate = v.rate * 1E2
+                    return v
+                  end, r.provided)
   if not currency then return r end
+  currency = currency:upper ()
   return tablex.filter (r, function (v) return v.currency == currency end)
 end
 

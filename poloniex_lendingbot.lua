@@ -53,12 +53,12 @@ local retry_profile = { 3, logcrit, "HTTP/1%.1 %d+ %w+", "wantread", "closed", "
 publicapi.lendingbook = make_retry (publicapi.lendingbook, unpack (retry_profile))
 lendapi.authquery     = make_retry (lendapi.authquery,     unpack (retry_profile))
 
-local tosatoshi = function (v) return tostring(v * 1E8) * 1 end
+local ratepip = 1E6
 local function markgaps (initial)
-  local lastseen = tosatoshi (initial)
+  local lastseen = initial * ratepip
   local gapcount
   return function(v)
-    local rate = tosatoshi (v.rate)
+    local rate = v.rate * ratepip
 
     -- difference between two consecutive rates is 1 satoshi apart
     -- reset gapcount back to 0 if more than 1 satoshi apart
@@ -111,7 +111,7 @@ local cancel_openoffers = function (context)
               end)
     :map (function (v)
             sleep (250)
-            log (("cancelling offer: %.8f @%.6f%%"):format (v.amount, v.rate * 100))
+            log (("cancelling offer: %.8f @%.6f%%"):format (v.amount, v.rate))
             local r, errmsg = lendapi:canceloffer (v.id)
             local status = "%s #%s"
             return errmsg or (status:format (r.message, v.id))
@@ -133,8 +133,8 @@ local place_newoffers = function (context)
     :map (markgaps (lendingbook[1].rate))
     :filter (function (v) return v.amount > wallfactor end)
     :map (function (v)
-            v.rate = tosatoshi (v.rate) - v.gap
-            v.rate = v.rate / 1E8
+            v.rate = v.rate * ratepip - v.gap
+            v.rate = v.rate / ratepip
             v.gap = nil
             return v
           end)
@@ -145,11 +145,11 @@ local place_newoffers = function (context)
                 return unique
               end)
     :filter (function (v) return v.rate > avgrate * 0.99 end)
-    :filter (function (v) return v.rate * 1E2 > minrate end)
+    :filter (function (v) return v.rate > minrate end)
     :take (newoffer_count)
     :map (function (v)
             sleep (250)
-            log (("placing offer: %.8f @%.6f%%"):format (lend_quantity, v.rate * 100))
+            log (("placing offer: %.8f @%.6f%%"):format (lend_quantity, v.rate))
             local offerstat, errmsg = lendapi:placeoffer (crypto, v.rate, lend_quantity)
             if errmsg then return errmsg end
 
@@ -171,7 +171,7 @@ local place_newoffers = function (context)
   :take (1)
   :foreach (function ()
               local msg = "volume weighted average rate: %.6f%%"
-              loginfo (msg:format (avgrate * 100))
+              loginfo (msg:format (avgrate))
             end)
 end
 
@@ -193,14 +193,14 @@ local function check_activeoffers (activeoffers)
     :map (function (id) return assert (prev_activedetail[ id ]) end)
     :foreach (function (v)
                 local status = "expired offer: #%s, %.8f @%.6f%%"
-                log (status:format (v.id, v.amount, v.rate * 100))
+                log (status:format (v.id, v.amount, v.rate))
               end)
   local filled = set.values (curr_activeid - prev_activeid)
   seq (filled)
     :map (function (id) return assert (curr_activedetail[ id ]) end)
     :foreach (function (v)
                 local status = "filled offer: #%s, %.8f @%.6f%%"
-                log (status:format (v.id, v.amount, v.rate * 100))
+                log (status:format (v.id, v.amount, v.rate))
               end)
 
   prev_activeid = curr_activeid
