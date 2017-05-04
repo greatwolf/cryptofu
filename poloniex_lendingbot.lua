@@ -35,9 +35,9 @@ options:
 
 local make_clearlog = function (logname, beat)
   local logger = make_log (logname)
-  return function (msg)
+  return function (...)
     beat:clear ()
-    return logger (msg)
+    return logger (...)
   end
 end
 
