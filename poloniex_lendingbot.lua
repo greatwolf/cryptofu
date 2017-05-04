@@ -17,6 +17,14 @@ lapp.add_type  ('seconds', 'number',
                 function (v)
                   lapp.assert (v >= 30, 'must be at least 30 seconds!')
                 end)
+lapp.add_type  ('minutes', 'number',
+                function (v)
+                  lapp.assert (math.floor (v) > 0, 'must be at least 1 minute!')
+                end)
+lapp.add_type  ('int', 'number',
+                function (v)
+                  lapp.assert (math.floor (v) > 0, 'int must be at > 0!')
+                end)
 local args = lapp
 [[
 Poloniex Lending Bot
@@ -29,6 +37,10 @@ options:
   --offerttl (seconds default 180)
                             Seconds to keep offers alive for before the bot
                             cancels and repositions.
+  --sma-bars (minutes default 1)
+                            Timeframe of each bar to use for simple moving average.
+  --sma-length (int default 10)
+                            Number of bars to use for simple moving average.
 
   <currency> (btc|bts|clam|doge|dash|ltc|maid|str|xmr|xrp|eth|fct)
 ]]
@@ -79,20 +91,6 @@ end
 
 local utc_now = function () return tounix_time (os.date '!%Y-%m-%d %H:%M:%S') end -- UTC
 
-local compute_weightedavg = function (lendingbook)
-  assert (#lendingbook > 0)
-  local volume = seq (lendingbook)
-                  :sum (function (v)
-                          return v.amount
-                        end)
-  local sum = seq (lendingbook)
-                :sum (function (v)
-                        return v.rate * v.amount
-                      end)
-
-  return sum / volume
-end
-
 local lend_quantity = args.quantity
 local wallfactor    = args.frontrun
 local minrate       = math.max (args.minrate, 0)
@@ -125,7 +123,6 @@ local place_newoffers = function (context)
   local newoffer_count = 5
   local seen = {}
   local lendingbook = context.lendingbook
-  local avgrate = compute_weightedavg (lendingbook)
 
   local r =
     seq (lendingbook)
@@ -144,7 +141,7 @@ local place_newoffers = function (context)
 
                 return unique
               end)
-    :filter (function (v) return v.rate > avgrate * 0.99 end)
+    :filter (function (v) return v.rate > context.sma end)
     :filter (function (v) return v.rate > minrate end)
     :take (newoffer_count)
     :map (function (v)
@@ -170,8 +167,8 @@ local place_newoffers = function (context)
   seq (r)
   :take (1)
   :foreach (function ()
-              local msg = "volume weighted average rate: %.6f%%"
-              loginfo (msg:format (avgrate))
+              local msg = "%d-min SMA rate: %.6f%%"
+              loginfo (msg:format (args.sma_bars, context.sma))
             end)
 end
 
@@ -227,6 +224,31 @@ local show_lendinginfo = function (context)
   show_opencount (#context.openoffers)
 end
 
+local make_sma = function (timeframe, length)
+  local floor = math.floor
+  local sma_buffer = { 0 }
+  local n = 1
+  local last = floor (os.time () / timeframe)
+  return
+  {
+    update = function (value)
+      assert (type(value) == 'number')
+      local current = floor (os.time () / timeframe)
+      if current - last > 0 then
+        last = current
+        n = (n % length) + 1
+        sma_buffer[n] = value
+      else
+        sma_buffer[n] = math.max(value, sma_buffer[n])
+      end
+    end,
+
+    compute = function ()
+      return seq (sma_buffer):reduce '+' / #sma_buffer
+    end,
+  }
+end
+
 local seconds = 1E3
 local function just_now () return os.clock () * seconds end
 
@@ -275,31 +297,34 @@ local function bot ()
   local lendingcontext = {}
   local relaxed, lively = 1, 2
   local state = relaxed
+  local sma = make_sma (60 * args.sma_bars, args.sma_length)
+  local common_actions = function ()
+      lendingcontext.lendingbook    = assert (publicapi:lendingbook (crypto))
+      lendingcontext.openoffers     = assert (lendapi:openoffers (crypto))
+      lendingcontext.activeoffers   = assert (lendapi:activeoffers (crypto))
+      lendingcontext.balance        = assert (lendapi:balance ())[crypto]
+
+      sma.update (lendingcontext.lendingbook[1].rate)
+      lendingcontext.sma            = sma.compute ()
+
+      check_activeoffers (lendingcontext.activeoffers)
+      show_lendinginfo (lendingcontext)
+  end
   local run_bot =
   {
     [relaxed] = delay (function ()
-      local openoffers    = assert (lendapi:openoffers (crypto))
-      local activeoffers  = assert (lendapi:activeoffers (crypto))
-      local balance       = assert (lendapi:balance ())[crypto]
-
-      check_activeoffers (activeoffers)
-      show_balance (balance)
-      show_activecount (#activeoffers)
-      if #openoffers > 0 or balance > lend_quantity then
+      common_actions ()
+      if  #lendingcontext.openoffers > 0 or
+          lendingcontext.balance > lend_quantity then
         state = lively
         log "looking alive!"
       end
     end, 30*seconds),
 
     [lively] = delay (function ()
-      lendingcontext.lendingbook    = assert (publicapi:lendingbook (crypto))
-      lendingcontext.openoffers     = assert (lendapi:openoffers (crypto))
-      lendingcontext.activeoffers   = assert (lendapi:activeoffers (crypto))
-      lendingcontext.balance        = assert (lendapi:balance ())[crypto]
-
-      check_activeoffers (lendingcontext.activeoffers)
-      show_lendinginfo (lendingcontext)
-      if #lendingcontext.openoffers == 0 and lendingcontext.balance < lend_quantity then
+      common_actions ()
+      if  #lendingcontext.openoffers == 0 and
+          lendingcontext.balance < lend_quantity then
         state = relaxed
         log "relaxing..."
         return
