@@ -114,7 +114,7 @@ local cancel_openoffers = function (context)
             local status = "%s #%s"
             return errmsg or (status:format (r.message, v.id))
           end)
-    :foreach (log)
+    :foreach (function (v) log (v) end)
 end
 
 local place_newoffers = function (context)
