@@ -65,6 +65,11 @@ do
   get_marketsymbol = initsymbols
 end
 
+local tofixpoint = function (v)
+  local fmt = "%.8f"
+  return fmt:format (v)
+end
+
 local kraken_publicapi = {}
 function kraken_publicapi:markethistory (market1, market2)
   local pair = get_marketsymbol(market1, market2)
@@ -126,8 +131,8 @@ function kraken_tradingapi:buy (market1, market2, rate, quantity)
     {
       pair = get_marketsymbol(market1, market2),
       type = "buy",
-      price = rate,
-      volume = quantity,
+      price   = tofixpoint (rate),
+      volume  = tofixpoint (quantity),
       ordertype = "limit",
     }
   return self.authquery ("/AddOrder", parm)
@@ -138,8 +143,8 @@ function kraken_tradingapi:sell (market1, market2, rate, quantity)
     {
       pair = get_marketsymbol(market1, market2),
       type = "sell",
-      price = rate,
-      volume = quantity,
+      price   = tofixpoint (rate),
+      volume  = tofixpoint (quantity),
       ordertype = "limit",
     }
   return self.authquery ("/AddOrder", parm)
