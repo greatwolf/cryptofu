@@ -172,6 +172,12 @@ local place_newoffers = function (context)
             end)
 end
 
+local function total_activeoffers (activeoffers)
+  return seq (activeoffers)
+          :map (function (v) return v.amount end)
+          :reduce '+'
+end
+
 local prev_activeid = set ()
 local prev_activedetail
 local function check_activeoffers (activeoffers)
@@ -215,11 +221,13 @@ local function log_changes (strfmt)
 end
 
 local show_balance      = log_changes (crypto .. " balance: %.8f")
+local show_lent         = log_changes (crypto .. " lent: %.8f")
 local show_activecount  = log_changes "%d active loans"
 local show_opencount    = log_changes "%d open offers"
 
 local show_lendinginfo = function (context)
   show_balance (context.balance)
+  show_lent (context.lent)
   show_activecount (#context.activeoffers)
   show_opencount (#context.openoffers)
 end
@@ -305,7 +313,8 @@ local function bot ()
       lendingcontext.balance        = assert (lendapi:balance ())[crypto]
 
       sma.update (lendingcontext.lendingbook[1].rate)
-      lendingcontext.sma            = sma.compute ()
+      lendingcontext.sma  = sma.compute ()
+      lendingcontext.lent = total_activeoffers (lendingcontext.activeoffers)
 
       check_activeoffers (lendingcontext.activeoffers)
       show_lendinginfo (lendingcontext)
