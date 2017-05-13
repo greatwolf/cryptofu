@@ -100,7 +100,8 @@ end
 
 local session_mt = { __index = bittrex_api }
 function bittrex_api.tradingapi (key, secret)
-  assert (key and secret, "No api key/secret parameter given.")
+  assert (type(key) == 'string' and type(secret) == 'string',
+          "Bad or missing api secret key pair.")
 
   return setmetatable({ key = key, secret = secret }, session_mt)
 end

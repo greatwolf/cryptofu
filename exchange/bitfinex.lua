@@ -249,7 +249,8 @@ end
 
 local make_apifactory = function (apimethods)
   return function (apikey, apisecret)
-    assert (apikey and apisecret, "No api key/secret parameter given.")
+    assert (type(apikey) == 'string' and type(apisecret) == 'string',
+            "Bad or missing api secret key pair.")
 
     local self        = make_authself (apikey, apisecret)
     local new_api     = tablex.update ({}, apimethods)
