@@ -22,12 +22,12 @@ end
 
 utest.group "sleep"
 {
-  test_delay2sec    = make_delaytest (2000, 0.0001),
-  test_delay1sec    = make_delaytest (1000, 0.0001),
-  test_delay750msec = make_delaytest (750, 0.0001),
-  test_delay500msec = make_delaytest (500, 0.0001),
-  test_delay101msec = make_delaytest (101, 0.0001),
-  test_delay13msec  = make_delaytest (13, 0.0001),
+  test_delay2sec    = make_delaytest (2000, 0.001),
+  test_delay1sec    = make_delaytest (1000, 0.001),
+  test_delay750msec = make_delaytest (750,  0.001),
+  test_delay500msec = make_delaytest (500,  0.001),
+  test_delay101msec = make_delaytest (101,  0.001),
+  test_delay13msec  = make_delaytest (13,   0.001),
 
   test_missingparm = function ()
     local r, errmsg = pcall (sleep)

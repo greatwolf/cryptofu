@@ -8,9 +8,11 @@ local keys = require 'tests.api_testkeys'.poloniex
 local publicapi = require 'exchange.poloniex'
 
 -- UTC current time
-local justnow = os.date '!*t'
-justnow.isdst = nil
-justnow = os.time (justnow)
+local utcnow = function ()
+  local now = os.date '!*t'
+  now.isdst = nil
+  return os.time (now)
+end
 
 utest.group "poloniex_publicapi"
 {
@@ -60,7 +62,7 @@ utest.group "poloniex_publicapi"
 
     assert (r and #r > 0)
     tablex.foreachi (r, function (n)
-                          assert (0 < n.date and n.date < justnow, n.date)
+                          assert (0 < n.date and n.date < utcnow (), n.date)
                           assert (n.rate > 0, n.rate)
                           assert (n.amount > 0, n.amount)
                         end)
@@ -120,7 +122,7 @@ utest.group "poloniex_tradingapi"
     assert (type(r) == 'table')
     tablex.foreachi (r, function (n)
                           assert (type(n.orderNumber) == 'string')
-                          assert (0 < n.date and n.date < justnow, n.date)
+                          assert (0 < n.date and n.date < utcnow (), n.date)
                           assert (n.rate > 0, n.rate)
                           assert (n.amount > 0, n.amount)
                         end)
@@ -201,7 +203,7 @@ utest.group "poloniex_lendingapi"
     assert (type(r) == 'table')
     tablex.foreachi (r, function (n)
                           assert (n.currency == "BTC")
-                          assert (0 < n.date and n.date < justnow, n.date)
+                          assert (0 < n.date and n.date < utcnow (), n.date)
                           assert (0.005 < n.rate and n.rate < 5.0, n.rate)
                           assert (n.amount > 0, n.amount)
                           assert (n.duration >= 2, n.duration)
@@ -217,7 +219,7 @@ utest.group "poloniex_orderlist"
     assert (type(r) == 'table')
     tablex.foreachi (r, function (n)
                           assert (type(n.orderNumber) == 'string')
-                          assert (0 < n.date and n.date < justnow, n.date)
+                          assert (0 < n.date and n.date < utcnow (), n.date)
                           assert (n.rate > 0, n.rate)
                           assert (n.amount > 0, n.amount)
                         end)
@@ -229,7 +231,7 @@ utest.group "poloniex_orderlist"
     assert (type(r) == 'table')
     tablex.foreachi (r, function (n)
                           assert (n.id)
-                          assert (0 < n.date and n.date < justnow, n.date)
+                          assert (0 < n.date and n.date < utcnow (), n.date)
                           assert (0.005 < n.rate and n.rate < 5.0, n.rate)
                           assert (n.amount > 0, n.amount)
                           assert (n.duration >= 2, n.duration)
