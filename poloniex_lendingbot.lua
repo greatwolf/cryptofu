@@ -81,15 +81,10 @@ local function markgaps (initial)
   end
 end
 
-local function tounix_time (timestr)
-  local time_pat = "([12]%d%d%d)%-([01]%d)%-([0-3]%d) ([012]%d):([0-5]%d):([0-5]%d)"
-  local year, month, day, hr, minute, sec = timestr:match (time_pat)
-  return os.time
-    { year = year, month = month, day = day,
-      hour = hr, min = minute, sec = sec }
-end
-
-local utc_now = function () return tounix_time (os.date '!%Y-%m-%d %H:%M:%S') end -- UTC
+local utc_now = function ()
+  local t = os.date '!*t'; t.isdst = nil;
+  return os.time (t)
+end -- UTC
 
 local lend_quantity = args.quantity
 local wallfactor    = args.frontrun
@@ -100,10 +95,6 @@ local cancel_openoffers = function (context)
   local openoffers  = context.openoffers
   local r =
     seq (openoffers)
-    :map (function (v)
-            v.date = tounix_time (v.date)
-            return v
-          end)
     :filter  (function (v)
                 return (utc_now () - v.date) > offerttl
               end)
