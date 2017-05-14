@@ -37,11 +37,30 @@ local poloniex_publicquery = function (self, cmd, parm)
   return apiquery.getrequest (url, "/public?" .. urlencode_parm (parm))
 end
 
+local poloniex_normalize = function (v)
+  if type(v.date) == 'string' then
+    local time_pat = "([12]%d%d%d)%-([01]%d)%-([0-3]%d) ([012]%d):([0-5]%d):([0-5]%d)"
+    local year, month, day, hr, minute, sec = v.date:match (time_pat)
+    assert (year and month and day)
+    assert (hr and minute and sec)
+    v.date = os.time
+      { year = year, month = month, day = day,
+        hour = hr, min = minute, sec = sec }
+  end
+  if type(v.rate) ~= 'number' then
+    v.rate = tonumber (v.rate)
+  end
+  if type(v.amount) ~= 'number' then
+    v.amount = tonumber (v.amount)
+  end
+  return v
+end
+
 local poloniex_publicapi = {}
 function poloniex_publicapi:markethistory (market1, market2)
   local r = poloniex_publicquery (self, "returnTradeHistory", {currencyPair = market1 .. "_" .. market2})
   if r.error then return nil, r.error end
-  return r
+  return tablex.imap (poloniex_normalize, r)
 end
 
 function poloniex_publicapi:orderbook (market1, market2)
@@ -102,7 +121,7 @@ function poloniex_lendingapi:openoffers (currency)
   tablex.foreach (r,  function (n)
                         tablex.transform (function (v)
                                             v.rate = v.rate * 1E2
-                                            return v
+                                            return poloniex_normalize (v)
                                           end, n)
                       end)
   if not currency then return r end
@@ -114,7 +133,7 @@ function poloniex_lendingapi:activeoffers (currency)
   if r.error then return nil, r.error end
   r = tablex.map (function (v)
                     v.rate = v.rate * 1E2
-                    return v
+                    return poloniex_normalize (v)
                   end, r.provided)
   if not currency then return r end
   currency = currency:upper ()
@@ -149,7 +168,7 @@ function poloniex_tradingapi:tradehistory (market1, market2, start_period, stop_
     }
   local r = self.authquery ("returnTradeHistory", parm)
   if r.error then return nil, r.error end
-  return r
+  return tablex.imap (poloniex_normalize, r)
 end
 
 function poloniex_tradingapi:buy (market1, market2, rate, quantity)
@@ -185,7 +204,7 @@ end
 function poloniex_tradingapi:openorders (market1, market2)
   local r = self.authquery ("returnOpenOrders", {currencyPair = market1 .. "_" .. market2})
   if r.error then return nil, r.error end
-  return r
+  return tablex.imap (poloniex_normalize, r)
 end
 
 local make_authself = function (apikey, apisecret)

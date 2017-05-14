@@ -7,6 +7,11 @@ local tablex = require 'pl.tablex'
 local keys = require 'tests.api_testkeys'.poloniex
 local publicapi = require 'exchange.poloniex'
 
+-- UTC current time
+local justnow = os.date '!*t'
+justnow.isdst = nil
+justnow = os.time (justnow)
+
 utest.group "poloniex_publicapi"
 {
   test_publicapinames = function()
@@ -53,10 +58,12 @@ utest.group "poloniex_publicapi"
   test_markethistory = function ()
     local r = publicapi:markethistory ("BTC", "LTC")
 
-    assert (r and r[1])
-    assert (r[1].date)
-    assert (r[1].rate + 0 > 0)
-    assert (r[1].amount + 0 > 0)
+    assert (r and #r > 0)
+    tablex.foreachi (r, function (n)
+                          assert (0 < n.date and n.date < justnow, n.date)
+                          assert (n.rate > 0, n.rate)
+                          assert (n.amount > 0, n.amount)
+                        end)
   end,
 
   test_orderbook = function ()
@@ -111,7 +118,12 @@ utest.group "poloniex_tradingapi"
     local r = assert (tradeapi:tradehistory ("BTC", "LTC"))
 
     assert (type(r) == 'table')
-    assert (#r > 0)
+    tablex.foreachi (r, function (n)
+                          assert (type(n.orderNumber) == 'string')
+                          assert (0 < n.date and n.date < justnow, n.date)
+                          assert (n.rate > 0, n.rate)
+                          assert (n.amount > 0, n.amount)
+                        end)
   end,
 
   test_buy = function ()
@@ -185,12 +197,15 @@ utest.group "poloniex_lendingapi"
 
   test_activeoffersquery = function ()
     local r = assert (lendapi:activeoffers "BTC")
+
     assert (type(r) == 'table')
-    if #r > 0 then
-      assert (r[1].currency == "BTC")
-      assert (r[1].amount + 0 > 0)
-      assert (0.005 < r[1].rate and r[1].rate < 5.0, r[1].rate)
-    end
+    tablex.foreachi (r, function (n)
+                          assert (n.currency == "BTC")
+                          assert (0 < n.date and n.date < justnow, n.date)
+                          assert (0.005 < n.rate and n.rate < 5.0, n.rate)
+                          assert (n.amount > 0, n.amount)
+                          assert (n.duration >= 2, n.duration)
+                        end)
   end,
 }
 
@@ -200,7 +215,12 @@ utest.group "poloniex_orderlist"
     local r = assert (tradeapi:openorders ("USDT", "BTC"))
 
     assert (type(r) == 'table')
-    assert (r[1] == nil or r[1].orderNumber)
+    tablex.foreachi (r, function (n)
+                          assert (type(n.orderNumber) == 'string')
+                          assert (0 < n.date and n.date < justnow, n.date)
+                          assert (n.rate > 0, n.rate)
+                          assert (n.amount > 0, n.amount)
+                        end)
   end,
 
   test_openoffers = function ()
@@ -209,7 +229,10 @@ utest.group "poloniex_orderlist"
     assert (type(r) == 'table')
     tablex.foreachi (r, function (n)
                           assert (n.id)
+                          assert (0 < n.date and n.date < justnow, n.date)
                           assert (0.005 < n.rate and n.rate < 5.0, n.rate)
+                          assert (n.amount > 0, n.amount)
+                          assert (n.duration >= 2, n.duration)
                         end)
   end,
 }
