@@ -66,18 +66,17 @@ publicapi.lendingbook = make_retry (publicapi.lendingbook, unpack (retry_profile
 lendapi.authquery     = make_retry (lendapi.authquery,     unpack (retry_profile))
 
 local ratepip = 1E6
-local function markgaps (initial)
-  local lastseen = initial * ratepip
-  local gapcount
-  return function(v)
-    local rate = v.rate * ratepip
+local function groupadjacent (precision, initial)
+  local floor     = math.floor
+  local lastrate  = floor (initial.rate * precision)
+  initial.rate    = (lastrate - 1) / precision
+  return function(curr, prev)
+    local curr_rate  = floor (curr.rate * precision)
+    local is_consec = curr_rate - lastrate <= 1
+    lastrate  = curr_rate
+    curr.rate = is_consec and prev.rate or (curr_rate - 1) / precision
 
-    -- difference between two consecutive rates is 1 satoshi apart
-    -- reset gapcount back to 0 if more than 1 satoshi apart
-    gapcount = ((rate - lastseen == 1) and gapcount or 0) + 1
-    v.gap = gapcount
-    lastseen = rate
-    return v
+    return curr
   end
 end
 
@@ -118,14 +117,9 @@ local place_newoffers = function (context)
   local r =
     seq (lendingbook)
     :filter (function () return context.balance > lend_quantity end)
-    :map (markgaps (lendingbook[1].rate))
+    :last ()
+    :map (groupadjacent (ratepip, lendingbook[1]))
     :filter (function (v) return v.amount > wallfactor end)
-    :map (function (v)
-            v.rate = v.rate * ratepip - v.gap
-            v.rate = v.rate / ratepip
-            v.gap = nil
-            return v
-          end)
     :filter  (function (v)
                 local unique = not seen[v.rate]
                 seen[v.rate] = true
