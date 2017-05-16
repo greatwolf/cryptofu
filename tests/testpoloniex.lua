@@ -149,7 +149,8 @@ utest.group "poloniex_tradingapi"
   test_badmoveorder = function ()
     local r, errmsg = tradeapi:moveorder ("BAD_ORDERNUMBER", 42000)
 
-    assert (errmsg == "Invalid orderNumber parameter.", errmsg)
+    assert (errmsg:match "HTTP ERROR 422", errmsg)
+    assert (errmsg:match "Invalid orderNumber parameter.", errmsg)
   end,
 }
 
@@ -243,7 +244,8 @@ utest.group "poloniex_cancels"
 {
   test_cancelinvalidorder = function ()
     local r, errmsg = tradeapi:cancelorder ("BAD_ORDERNUMBER")
-    assert (errmsg == "Invalid orderNumber parameter.", errmsg)
+    assert (errmsg:match "HTTP ERROR 422", errmsg)
+    assert (errmsg:match "Invalid orderNumber parameter.", errmsg)
   end,
 
   test_cancelorder = function ()
@@ -259,7 +261,8 @@ utest.group "poloniex_cancels"
 
   test_cancelinvalidoffer = function ()
     local r, errmsg = lendapi:canceloffer ("BAD_OFFERERNUMBER")
-    assert (errmsg == "Invalid orderNumber parameter.", errmsg)
+    assert (errmsg:match "HTTP ERROR 422", errmsg)
+    assert (errmsg:match "Invalid orderNumber parameter.", errmsg)
   end,
 
   test_canceloffer = function ()

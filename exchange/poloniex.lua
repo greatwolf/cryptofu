@@ -16,13 +16,18 @@ local function poloniex_authquery (self, cmd, parm)
   local post_data = urlencode_parm (parm)
   self.headers.sign = crypto.hmac.digest ("sha512", post_data, self.secret)
 
-  local res = apiquery.postrequest (url, "/tradingApi", self.headers, post_data)
+  local res, code = apiquery.postrequest (url, "/tradingApi",
+                                          self.headers, post_data)
   if res.error then
     -- if it's just a bad nonce, update nonce and retry
     local new_nonce = res.error:match "Nonce must be greater than (%d+)%."
     if new_nonce then
       nonce (new_nonce)
       return poloniex_authquery (self, cmd, parm)
+    end
+    -- append server response code if there's a json error
+    if code ~= 200 then
+      res.error = ("HTTP ERROR %d: %s"):format (code, res.error)
     end
   end
   return res
@@ -33,8 +38,13 @@ local poloniex_publicquery = function (self, cmd, parm)
   parm.command      = cmd
   parm.currency     = parm.currency and parm.currency:upper ()
   parm.currencyPair = parm.currencyPair and parm.currencyPair:upper ()
+  parm = urlencode_parm (parm)
 
-  return apiquery.getrequest (url, "/public?" .. urlencode_parm (parm))
+  local res, code = apiquery.getrequest (url, "/public?" .. parm)
+  if code ~= 200 then
+    res.error = ("HTTP ERROR %d: %s"):format (code, res.error)
+  end
+  return res
 end
 
 local poloniex_normalize = function (v)
