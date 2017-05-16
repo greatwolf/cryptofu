@@ -31,6 +31,7 @@ Poloniex Lending Bot
 Usage: poloniex_lendingbot [options] <currency>
 
 options:
+  -v                        Show stacktrace on request errors.
   --frontrun (amount)       Frontrun other offers w/ at least this amount.
   --quantity (amount)       Amount to lend out per offer.
   --minrate  (default 0.0)  Minimum rate the bot will lend at.
@@ -263,8 +264,9 @@ local function app_loop (func, throttle_delay)
 
   local status, errmsg
   local quit_func
+  local pcall = args.v and xpcall or pcall
   repeat
-    status, errmsg = xpcall(task, debug.traceback)
+    status, errmsg = pcall (task, debug.traceback)
 
     if not status then
       quit_func = errmsg:match "interrupted!"
