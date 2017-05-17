@@ -164,6 +164,14 @@ local function total_activeoffers (activeoffers)
           :reduce '+'
 end
 
+local function compute_loanyield (context)
+  local sum =
+    seq (context.activeoffers)
+    :map (function (v) return v.amount * v.rate end)
+    :reduce '+'
+  return sum / context.lent
+end
+
 local prev_activeid = set ()
 local prev_activedetail
 local function check_activeoffers (activeoffers)
@@ -208,14 +216,16 @@ end
 
 local show_balance      = log_changes (crypto .. " balance: %.8f")
 local show_lent         = log_changes (crypto .. " lent: %.8f")
+local show_yield        = log_changes (crypto .. " effective yield: %.6f%%")
 local show_activecount  = log_changes "%d active loans"
 local show_opencount    = log_changes "%d open offers"
 
 local show_lendinginfo = function (context)
-  show_balance (context.balance)
-  show_lent (context.lent)
   show_activecount (#context.activeoffers)
   show_opencount (#context.openoffers)
+  show_balance (context.balance)
+  show_lent (context.lent)
+  show_yield (context.yield)
 end
 
 local make_sma = function (timeframe, length)
@@ -300,8 +310,9 @@ local function bot ()
       lendingcontext.balance        = assert (lendapi:balance ())[crypto]
 
       sma.update (lendingcontext.lendingbook[1].rate)
-      lendingcontext.sma  = sma.compute ()
-      lendingcontext.lent = total_activeoffers (lendingcontext.activeoffers)
+      lendingcontext.sma    = sma.compute ()
+      lendingcontext.lent   = total_activeoffers (lendingcontext.activeoffers)
+      lendingcontext.yield  = compute_loanyield (lendingcontext)
 
       check_activeoffers (lendingcontext.activeoffers)
       show_lendinginfo (lendingcontext)
