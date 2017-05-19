@@ -1,5 +1,4 @@
 require 'config'
-local publicapi   = require 'exchange.poloniex'
 local make_log    = require 'tools.logger'
 local make_retry  = require 'tools.retry'
 local heartbeat   = require 'tools.heartbeat'
@@ -27,8 +26,8 @@ lapp.add_type  ('int', 'number',
                 end)
 local args = lapp
 [[
-Poloniex Lending Bot
-Usage: poloniex_lendingbot [options] <currency>
+Lending Bot
+Usage: lendingbot [options] <exchange> <currency>
 
 options:
   -v                        Show stacktrace on request errors.
@@ -43,9 +42,26 @@ options:
   --sma-length (int default 10)
                             Number of bars to use for simple moving average.
 
-  <currency> (btc|bts|clam|doge|dash|ltc|maid|str|xmr|xrp|eth|fct)
+  <exchange>  (bitfinex|poloniex)
+  <currency>  (string)
+              poloniex:
+                btc, bts, clam, doge, dash, ltc, maid, str, xmr, xrp, eth, fct
+              bitfinex:
+                usd, btc, eth, etc, zec, xmr, ltc, dsh
 ]]
+local check_currency = function (args)
+  local exchange =
+  {
+    bitfinex = set {"usd", "btc", "eth", "etc", "zec", "xmr", "ltc", "dsh"},
+    poloniex = set {"btc", "bts", "clam", "doge", "dash", "ltc",
+                    "maid", "str", "xmr", "xrp", "eth", "fct"}
+  }
+  exchange = exchange[ args.exchange ]
+  lapp.assert (exchange[ args.currency ], "Unsupported crypto on this exchange!")
+end
+check_currency (args)
 
+local publicapi   = require ('exchange.' .. args.exchange)
 local make_clearlog = function (logname, beat)
   local logger = make_log (logname)
   return function (...)
@@ -59,7 +75,7 @@ local pulse   = heartbeat.newpulse (hwidth)
 local log     = make_clearlog ("LENDBOT", pulse)
 local loginfo = make_clearlog ("INFO", pulse)
 local logcrit = make_clearlog ("CRITICAL", pulse)
-local auth    = apikeys.poloniex
+local auth    = apikeys[args.exchange]
 local lendapi = publicapi.lendingapi (auth.key, auth.secret)
 local unpack = unpack or table.unpack
 local retry_profile = { 3, logcrit, "HTTP/1%.1 %d+ %w+", "wantread", "closed", "timeout" }
@@ -298,7 +314,7 @@ local function delay (f, msec)
 end
 
 local function bot ()
-  print "Poloniex Lending Bot"
+  print "Lending Bot"
   local lendingcontext = {}
   local relaxed, lively = 1, 2
   local state = relaxed
