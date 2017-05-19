@@ -1,10 +1,10 @@
 require 'pl.app'.require_here ".."
 local utest = require 'tools.unittest'
 local stack = require 'tools.simplestack'
-local dump  = require 'pl.pretty'.dump
 local tablex = require 'pl.tablex'
 
-local keys = require 'tests.api_testkeys'.poloniex
+
+local keys      = require 'tests.api_testkeys'.poloniex
 local publicapi = require 'exchange.poloniex'
 
 -- UTC current time
@@ -19,6 +19,7 @@ utest.group "poloniex_publicapi"
   test_publicapinames = function()
     assert (publicapi.orderbook)
     assert (publicapi.markethistory)
+    assert (publicapi.tradingapi)
     assert (publicapi.lendingbook)
     assert (publicapi.lendingapi)
     
