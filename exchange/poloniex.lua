@@ -1,4 +1,4 @@
-local crypto         = require 'crypto'
+local hmac           = require 'crypto'.hmac
 local tablex         = require 'pl.tablex'
 local apiquery       = require 'tools.apiquery'
 local urlencode_parm = require 'tools.util'.urlencode_parm
@@ -13,8 +13,8 @@ local function poloniex_authquery (self, cmd, parm)
   parm.nonce = nonce ()
   parm.currencyPair = parm.currencyPair and parm.currencyPair:upper()
 
-  local post_data = urlencode_parm (parm)
-  self.headers.sign = crypto.hmac.digest ("sha512", post_data, self.secret)
+  local post_data   = urlencode_parm (parm)
+  self.headers.sign = hmac.digest ("sha512", post_data, self.secret)
 
   local res, code = apiquery.postrequest (url, "/tradingApi",
                                           self.headers, post_data)
@@ -72,17 +72,18 @@ end
 
 local poloniex_publicapi = {}
 function poloniex_publicapi:markethistory (market1, market2)
-  local r = poloniex_publicquery (self, "returnTradeHistory", {currencyPair = market1 .. "_" .. market2})
-  if r.error then return nil, r.error end
-  return tablex.imap (poloniex_normalize, r)
+  local parm = {currencyPair = market1 .. "_" .. market2}
+  local r = poloniex_publicquery (self, "returnTradeHistory", parm)
+  return normalized_check (r)
 end
 
 function poloniex_publicapi:orderbook (market1, market2)
-  local r = poloniex_publicquery (self, "returnOrderBook", {currencyPair = market1 .. "_" .. market2})
+  local parm = {currencyPair = market1 .. "_" .. market2}
+  local r = poloniex_publicquery (self, "returnOrderBook", parm)
   if r.error then return nil, r.error end
 
   local unpack = unpack or table.unpack
-  r.bids  = tablex.zip (unpack (r.bids))
+  r.bids = tablex.zip (unpack (r.bids))
   r.asks = tablex.zip (unpack (r.asks))
   -- price table at index 1 and amount table at index 2
   -- connect them to the right field name and remove old reference
@@ -185,13 +186,25 @@ function poloniex_tradingapi:tradehistory (market1, market2, start_period, stop_
 end
 
 function poloniex_tradingapi:buy (market1, market2, rate, quantity)
-  local r = self.authquery ("buy", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
+  local parm =
+    {
+      currencyPair = market1 .. "_" .. market2,
+      rate = rate,
+      amount = quantity
+    }
+  local r = self.authquery ("buy", parm)
   if r.error then return nil, r.error end
   return poloniex_normalize (r)
 end
 
 function poloniex_tradingapi:sell (market1, market2, rate, quantity)
-  local r = self.authquery ("sell", {currencyPair = market1 .. "_" .. market2, rate = rate, amount = quantity})
+  local parm =
+    {
+      currencyPair = market1 .. "_" .. market2,
+      rate = rate,
+      amount = quantity
+    }
+  local r = self.authquery ("sell", parm)
   if r.error then return nil, r.error end
   return poloniex_normalize (r)
 end
