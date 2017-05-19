@@ -7,6 +7,13 @@ local tablex  = require 'pl.tablex'
 local keys      = require 'tests.api_testkeys'.bitfinex
 local publicapi = require 'exchange.bitfinex'
 
+-- UTC current time
+local utcnow = function ()
+  local now = os.date '!*t'
+  now.isdst = nil
+  return os.time (now)
+end
+
 utest.group "bitfinex_publicapi"
 {
   test_publicapinames = function ()
@@ -52,7 +59,12 @@ utest.group "bitfinex_publicapi"
 
   test_markethistory = function ()
     local r = assert (publicapi:markethistory ("BTC", "LTC"))
-    assert (#r > 0)
+    assert (r and #r > 0)
+    tablex.foreachi (r, function (n)
+                          assert (0 < n.date and n.date < utcnow (), n.date)
+                          assert (n.rate > 0, n.rate)
+                          assert (n.amount > 0, n.amount)
+                        end)
   end,
 
   test_bogusmarket = function ()
@@ -95,28 +107,34 @@ utest.group "bitfinex_tradingapi"
   end,
 
   test_tradehistory = function ()
-    local r = assert (tradeapi:tradehistory ("BTC", "LTC"))
+    local r = assert (tradeapi:tradehistory ("BTC", "USD"))
 
     assert (type(r) == 'table')
+    tablex.foreachi (r, function (n)
+                          assert (type(n.orderid) == 'string')
+                          assert (0 < n.date and n.date < utcnow (), n.date)
+                          assert (n.rate > 0, n.rate)
+                          assert (n.amount > 0, n.amount)
+                        end)
   end,
 
   test_buy = function ()
     local r, errmsg = tradeapi:buy ("BTC", "USD", 0.15, 1)
 
-    assert ((r and r.order_id and r.side == "buy") or
+    assert ((r and r.orderid and r.side == "buy") or
             errmsg:match "Invalid order: not enough", errmsg)
     if r then
-      test_orders:push (assert (r.order_id))
+      test_orders:push (assert (r.orderid))
     end
   end,
 
   test_sell = function ()
     local r, errmsg = tradeapi:sell ("BTC", "USD", 10000.9, 0.01)
 
-    assert ((r and r.order_id and r.side == "sell") or
+    assert ((r and r.orderid and r.side == "sell") or
             errmsg:match "Invalid order: not enough", errmsg)
     if r then
-      test_orders:push (assert (r.order_id))
+      test_orders:push (assert (r.orderid))
     end
   end,
 }
@@ -143,13 +161,13 @@ utest.group "bitfinex_lendingapi"
   end,
 
   test_placeoffer = function ()
-    local r, errmsg = lendapi:placeoffer ("BTC", 0.02, 0.001, 3)
+    local r, errmsg = lendapi:placeoffer ("BTC", 2.0, 0.001, 3)
 
-    assert ((r and r.orderID) or
+    assert ((r and r.orderid) or
             errmsg:match "Invalid offer: not enough" or
             errmsg:match "Invalid offer: incorrect amount", errmsg)
     if r then
-      test_offers:push (assert (r.orderID))
+      test_offers:push (assert (r.orderid))
     end
   end,
 
@@ -172,11 +190,14 @@ utest.group "bitfinex_lendingapi"
 
     assert (r and not errmsg, errmsg)
     assert (type(r) == 'table')
-    if #r > 0 then
-      assert (r[1].currency == "BTC")
-      assert (r[1].amount + 0 > 0)
-      assert (r[1].rate + 0 > 0)
-    end
+    tablex.foreachi (r, function (n)
+                          assert (type(n.orderid) == 'string')
+                          assert (n.currency == "BTC")
+                          assert (0 < n.date and n.date < utcnow (), n.date)
+                          assert (0.005 < n.rate and n.rate < 5.0, n.rate)
+                          assert (n.amount > 0, n.amount)
+                          assert (n.duration >= 2, n.duration)
+                        end)
   end,
 }
 
@@ -186,36 +207,41 @@ utest.group "bitfinex_orderlist"
     local r = assert (tradeapi:openorders ("USD", "BTC"))
 
     assert (type(r) == 'table')
-    tablex.foreachi (r, function (v)
-                          assert (type(v.id) == 'number')
-                          assert (v.side == "buy" or v.side == "sell")
-                          assert (v.price)
-                          assert (v.original_amount)
+    tablex.foreachi (r, function (n)
+                          assert (type(n.orderid) == 'string')
+                          assert (n.side == "buy" or n.side == "sell")
+                          assert (0 < n.date and n.date < utcnow (), n.date)
+                          assert (n.rate > 0, n.rate)
+                          assert (n.amount > 0, n.amount)
                         end)
   end,
 
   test_openoffers = function ()
-    local r = assert (lendapi:openoffers "USD")
+    local r = assert (lendapi:openoffers "DSH")
 
     assert (type(r) == 'table')
     tablex.foreachi (r, function (n)
-                          assert (n.id and n.currency == "USD")
-                          assert (type(n.timestamp) == 'number')
+                          assert (type(n.orderid) == 'string')
+                          assert (n.currency == "DSH")
+                          assert (0 < n.date and n.date < utcnow (), n.date)
+                          assert (0.005 < n.rate and n.rate < 5.0, n.rate)
+                          assert (n.amount > 0, n.amount)
+                          assert (n.duration >= 2, n.duration)
                         end)
   end,
 }
 
 utest.group "bitfinex_cancels"
 {
-  test_cancelbadorderid = function ()
-    local ok, res = pcall (tradeapi.cancelorder, tradeapi, "BAD_ORDERNUMBER")
-    assert (ok and res.result == "no valid order_ids given.", res)
+  test_cancelbadorderidtype = function ()
+    local ok, res = pcall (tradeapi.cancelorder, tradeapi, {"BAD_ORDERNUMBER"})
+    assert (ok and res.result == "no valid order_ids given.", res.result)
   end,
 
   test_cancelinvalidorder = function ()
-    local ok, res, errmsg = pcall (tradeapi.cancelorder, tradeapi, 42)
+    local ok, res, errmsg = pcall (tradeapi.cancelorder, tradeapi, "42")
     assert (ok and res, res or errmsg)
-    assert (res.result == "None to cancel")
+    assert (res.result == "None to cancel", res.result)
   end,
 
   test_cancelorder = function ()
@@ -227,6 +253,7 @@ utest.group "bitfinex_cancels"
     r = assert (tradeapi:cancelorder (unpack (test_orders)))
 
     local cancelcount = r.result:match "All %((.-)%) submitted for cancellation;"
+    assert (cancelcount, r.result)
     assert (tonumber (cancelcount) == test_orders:size ())
     test_orders:clear ()
   end,

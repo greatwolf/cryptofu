@@ -38,7 +38,27 @@ local bitfinex_publicquery = function (self, cmd, parm)
 end
 
 local tounix_utc = function (t)
-  return 3600*7 + t
+  if not t then return t end
+  local utc = os.date ('!*t', math.floor (t))
+  utc.isdst = nil
+  return os.time (utc)
+end
+
+local bitfinex_normalize = function (v)
+  if type(v) ~= 'table' then return v end
+  v.duration, v.period = v.period
+  v.orderid, v.id, v.order_id = tostring (v.id or v.order_id)
+  v.date, v.timestamp = tounix_utc (v.timestamp)
+  v.rate, v.price = tonumber (v.rate or v.price)
+  v.amount, v.remaining_amount = tonumber (v.amount or v.remaining_amount)
+
+  return v
+end
+
+local normalized_check = function (r, errmsg)
+  if not r then return r, errmsg end
+  tablex.transform (bitfinex_normalize, r)
+  return r
 end
 
 -- The way finex handles market symbols is a bit annoying.
@@ -77,7 +97,7 @@ end
 function bitfinex_publicapi:markethistory (market1, market2)
   local cmd = "/trades/%s"
   local sym = get_marketsymbol (market1, market2)
-  return bitfinex_publicquery (self, cmd:format (sym))
+  return normalized_check (bitfinex_publicquery (self, cmd:format (sym)))
 end
 
 function bitfinex_publicapi:lendingbook (currency)
@@ -128,7 +148,7 @@ function bitfinex_tradingapi:tradehistory (market1, market2, start_period, stop_
       timestamp = start_period or 1,
       ['until'] = stop_period
     }
-  return self.authquery ("/mytrades", parm)
+  return normalized_check (self.authquery ("/mytrades", parm))
 end
 
 function bitfinex_tradingapi:buy (market1, market2, rate, quantity)
@@ -141,7 +161,9 @@ function bitfinex_tradingapi:buy (market1, market2, rate, quantity)
       type   = "exchange limit",
       is_postonly = true,
     }
-  return self.authquery ("/order/new", parm)
+  local r, errmsg = self.authquery ("/order/new", parm)
+  if not r then return r, errmsg end
+  return bitfinex_normalize (r)
 end
 
 function bitfinex_tradingapi:sell (market1, market2, rate, quantity)
@@ -154,19 +176,22 @@ function bitfinex_tradingapi:sell (market1, market2, rate, quantity)
       type   = "exchange limit",
       is_postonly = true,
     }
-  return self.authquery ("/order/new", parm)
+  local r, errmsg = self.authquery ("/order/new", parm)
+  if not r then return r, errmsg end
+  return bitfinex_normalize (r)
 end
 
 function bitfinex_tradingapi:cancelorder (...)
-  local order_ids = tablex.filter ({...}, function (v) return type(v) == 'number' end)
+  local order_ids = tablex.filter ({...}, function (v) return type(v) == 'string' end)
   if #order_ids < 1 then
     return { result = "no valid order_ids given." }
   end
-  return self.authquery ("/order/cancel/multi", { order_ids = order_ids })
+  return normalized_check (self.authquery  ("/order/cancel/multi",
+                                            { order_ids = order_ids }))
 end
 
 function bitfinex_tradingapi:openorders (market1, market2)
-  return self.authquery ("/orders")
+  return normalized_check (self.authquery ("/orders"))
 end
 
 local bitfinex_lendingapi = {}
@@ -182,18 +207,17 @@ function bitfinex_lendingapi:placeoffer (currency, rate, quantity, duration)
   local r, errmsg = self.authquery ("/offer/new", parm)
   if not r then return r, errmsg end
   r.success = 1
-  r.orderID = r.id
   r.message = "Loan order placed."
-  return r
+  return bitfinex_normalize (r)
 end
 
 function bitfinex_lendingapi:canceloffer (orderid)
+  orderid = tonumber (orderid) or orderid
   local r, errmsg = self.authquery ("/offer/cancel", {offer_id = orderid})
   if not r then return r, errmsg end
   r.success = 1
   r.message = "Loan offer canceled."
-  r.timestamp = tounix_utc (r.timestamp)
-  return r
+  return bitfinex_normalize (r)
 end
 
 function bitfinex_lendingapi:openoffers (currency)
@@ -204,10 +228,9 @@ function bitfinex_lendingapi:openoffers (currency)
                                  v.direction == "lend"
                         end)
   tablex.foreach  (r, function (v)
-                        v.amount, v.remaining_amount = v.remaining_amount
-                        v.timestamp = tounix_utc (v.timestamp)
                         v.rate = v.rate / 365
                       end)
+  tablex.transform (bitfinex_normalize, r)
   return r
 end
 
@@ -219,6 +242,7 @@ function bitfinex_lendingapi:activeoffers (currency)
                                  v.status == "ACTIVE"
                         end)
   tablex.foreach (r, function (v) v.rate = v.rate / 365 end)
+  tablex.transform (bitfinex_normalize, r)
   return r
 end
 

@@ -122,7 +122,7 @@ utest.group "poloniex_tradingapi"
 
     assert (type(r) == 'table')
     tablex.foreachi (r, function (n)
-                          assert (type(n.orderNumber) == 'string')
+                          assert (type(n.orderid) == 'string')
                           assert (0 < n.date and n.date < utcnow (), n.date)
                           assert (n.rate > 0, n.rate)
                           assert (n.amount > 0, n.amount)
@@ -132,18 +132,18 @@ utest.group "poloniex_tradingapi"
   test_buy = function ()
     local r, errmsg = tradeapi:buy ("BTC", "VTC", 0.00000015, 1000)
 
-    assert (errmsg == "Not enough BTC." or (r and r.orderNumber), errmsg)
+    assert (errmsg == "Not enough BTC." or (r and r.orderid), errmsg)
     if r then
-      test_orders:push (assert (r.orderNumber))
+      test_orders:push (assert (r.orderid))
     end
   end,
 
   test_sell = function ()
     local r, errmsg = tradeapi:sell ("USDT", "BTC", 40000, 0.000001)
 
-    assert (errmsg == "Not enough BTC." or (r and r.orderNumber), errmsg)
+    assert (errmsg == "Not enough BTC." or (r and r.orderid), errmsg)
     if r then 
-      test_orders:push (assert (r.orderNumber))
+      test_orders:push (assert (r.orderid))
     end
   end,
 
@@ -170,18 +170,18 @@ utest.group "poloniex_lendingapi"
   test_placeoffer = function ()
     local r, errmsg = lendapi:placeoffer ("BTC", 2.0, 0.001, 3, false)
 
-    assert (errmsg == "Amount must be at least 0.01." or (r and r.orderID), errmsg)
+    assert (errmsg == "Amount must be at least 0.01." or (r and r.orderid), errmsg)
     if r then
-      test_offers:push (assert (r.orderID))
+      test_offers:push (assert (r.orderid))
     end
   end,
 
   test_placeoffermixcase = function ()
     local r, errmsg = lendapi:placeoffer ("BtC", 2.0, 0.001, 3, false)
 
-    assert (errmsg == "Amount must be at least 0.01." or (r and r.orderID), errmsg)
+    assert (errmsg == "Amount must be at least 0.01." or (r and r.orderid), errmsg)
     if r then
-      test_offers:push (assert (r.orderID))
+      test_offers:push (assert (r.orderid))
     end
   end,
 
@@ -204,6 +204,7 @@ utest.group "poloniex_lendingapi"
 
     assert (type(r) == 'table')
     tablex.foreachi (r, function (n)
+                          assert (type(n.orderid) == 'string')
                           assert (n.currency == "BTC")
                           assert (0 < n.date and n.date < utcnow (), n.date)
                           assert (0.005 < n.rate and n.rate < 5.0, n.rate)
@@ -220,7 +221,7 @@ utest.group "poloniex_orderlist"
 
     assert (type(r) == 'table')
     tablex.foreachi (r, function (n)
-                          assert (type(n.orderNumber) == 'string')
+                          assert (type(n.orderid) == 'string')
                           assert (0 < n.date and n.date < utcnow (), n.date)
                           assert (n.rate > 0, n.rate)
                           assert (n.amount > 0, n.amount)
@@ -232,7 +233,7 @@ utest.group "poloniex_orderlist"
 
     assert (type(r) == 'table')
     tablex.foreachi (r, function (n)
-                          assert (n.id)
+                          assert (type(n.orderid) == 'string')
                           assert (0 < n.date and n.date < utcnow (), n.date)
                           assert (0.005 < n.rate and n.rate < 5.0, n.rate)
                           assert (n.amount > 0, n.amount)
