@@ -101,9 +101,9 @@ local cancel_openoffers = function (context)
     :map (function (v)
             sleep (250)
             log (("cancelling offer: %.8f @%.6f%%"):format (v.amount, v.rate))
-            local r, errmsg = lendapi:canceloffer (v.id)
+            local r, errmsg = lendapi:canceloffer (v.orderid)
             local status = "%s #%s"
-            return errmsg or (status:format (r.message, v.id))
+            return errmsg or (status:format (r.message, v.orderid))
           end)
     :foreach (function (v) log (v) end)
 end
@@ -141,7 +141,7 @@ local place_newoffers = function (context)
 
             local status = "%s #%s"
             return status:format (offerstat.message,
-                                  offerstat.orderID)
+                                  offerstat.orderid)
           end)
     :map (function (v)
             log (v)
@@ -161,7 +161,7 @@ end
 local function total_activeoffers (activeoffers)
   return seq (activeoffers)
           :map (function (v) return v.amount end)
-          :reduce '+'
+          :reduce '+' or 0
 end
 
 local function compute_loanyield (context)
@@ -169,7 +169,7 @@ local function compute_loanyield (context)
     seq (context.activeoffers)
     :map (function (v) return v.amount * v.rate end)
     :reduce '+'
-  return sum / context.lent
+  return not sum and 0 or (sum / context.lent)
 end
 
 local prev_activeid = set ()
@@ -178,8 +178,8 @@ local function check_activeoffers (activeoffers)
   local curr_activedetail = {}
   local curr_activeid = set (seq (activeoffers)
                               :map (function (v)
-                                      curr_activedetail[v.id] = v
-                                      return v.id
+                                      curr_activedetail[v.orderid] = v
+                                      return v.orderid
                                     end)
                               :copy ())
 
@@ -190,14 +190,14 @@ local function check_activeoffers (activeoffers)
     :map (function (id) return assert (prev_activedetail[ id ]) end)
     :foreach (function (v)
                 local status = "expired offer: #%s, %.8f @%.6f%%"
-                log (status:format (v.id, v.amount, v.rate))
+                log (status:format (v.orderid, v.amount, v.rate))
               end)
   local filled = set.values (curr_activeid - prev_activeid)
   seq (filled)
     :map (function (id) return assert (curr_activedetail[ id ]) end)
     :foreach (function (v)
                 local status = "filled offer: #%s, %.8f @%.6f%%"
-                log (status:format (v.id, v.amount, v.rate))
+                log (status:format (v.orderid, v.amount, v.rate))
               end)
 
   prev_activeid = curr_activeid
