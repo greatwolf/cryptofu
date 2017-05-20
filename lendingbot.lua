@@ -82,7 +82,7 @@ local retry_profile = { 3, logcrit, "HTTP/1%.1 %d+ %w+", "wantread", "closed", "
 publicapi.lendingbook = make_retry (publicapi.lendingbook, unpack (retry_profile))
 lendapi.authquery     = make_retry (lendapi.authquery,     unpack (retry_profile))
 
-local ratepip = 1E6
+local ratepip = 1E5
 local function groupadjacent (precision, initial)
   local floor     = math.floor
   local lastrate  = floor (initial.rate * precision)
