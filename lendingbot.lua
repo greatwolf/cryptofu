@@ -148,12 +148,13 @@ local place_newoffers = function (context)
     :take (newoffer_count)
     :map (function (v)
             sleep (250)
-            log (("placing offer: %.8f @%.6f%%"):format (lend_quantity, v.rate))
-            local offerstat, errmsg = lendapi:placeoffer (crypto, v.rate, lend_quantity)
+            local quantity =  lend_quantity + context.balance % lend_quantity
+            log (("placing offer: %.8f @%.6f%%"):format (quantity, v.rate))
+            local offerstat, errmsg = lendapi:placeoffer (crypto, v.rate, quantity)
             if errmsg then return errmsg end
 
             assert (offerstat.success == 1)
-            context.balance = context.balance - lend_quantity
+            context.balance = context.balance - quantity
 
             local status = "%s #%s"
             return status:format (offerstat.message,
