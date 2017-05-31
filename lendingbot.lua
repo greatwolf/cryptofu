@@ -133,7 +133,7 @@ local place_newoffers = function (context)
 
   local r =
     seq (lendingbook)
-    :filter (function () return context.balance > lend_quantity end)
+    :filter (function () return lend_quantity <= context.balance end)
     :last ()
     :map (groupadjacent (ratepip, lendingbook[1]))
     :filter (function (v) return v.amount > wallfactor end)
