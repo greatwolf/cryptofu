@@ -339,7 +339,7 @@ local function bot ()
     [relaxed] = delay (function ()
       common_actions ()
       if  #lendingcontext.openoffers > 0 or
-          lendingcontext.balance > lend_quantity then
+          lend_quantity <= lendingcontext.balance then
         state = lively
         log "looking alive!"
       end
