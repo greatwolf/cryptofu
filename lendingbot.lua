@@ -103,6 +103,14 @@ local utc_now = function ()
   return os.time (t)
 end -- UTC
 
+local scale_duration = function (rate, avg, sd)
+  local e = math.exp (1)
+  local zscore = (rate - avg) / sd
+  local x = 4 * zscore - 8
+  local sigmoid = 2 + 18 / (1 + e^-x)
+  return math.floor (sigmoid + 0.5)   -- round off
+end
+
 local lend_quantity = args.quantity
 local wallfactor    = args.frontrun
 local minrate       = math.max (args.minrate, 0)
@@ -149,9 +157,10 @@ local place_newoffers = function (context)
     :take (newoffer_count)
     :map (function (v)
             sleep (250)
+            local period   = scale_duration (v.rate, context.sma, 0.015)
             local quantity =  lend_quantity + context.balance % lend_quantity
             log (("placing offer: %.8f @%.6f%%"):format (quantity, v.rate))
-            local offerstat, errmsg = lendapi:placeoffer (crypto, v.rate, quantity)
+            local offerstat, errmsg = lendapi:placeoffer (crypto, v.rate, quantity, period)
             if errmsg then return errmsg end
 
             assert (offerstat.success == 1)
