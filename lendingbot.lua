@@ -8,19 +8,19 @@ local set   = require 'pl.set'
 local lapp  = require 'pl.lapp'
 
 
-lapp.add_type  ('amount', 'number',
+lapp.add_type  ('amount', tonumber,
                 function (v)
                   lapp.assert (v > 0, 'amount must be > 0!')
                 end)
-lapp.add_type  ('seconds', 'number',
+lapp.add_type  ('seconds', tonumber,
                 function (v)
                   lapp.assert (v >= 30, 'must be at least 30 seconds!')
                 end)
-lapp.add_type  ('minutes', 'number',
+lapp.add_type  ('minutes', tonumber,
                 function (v)
                   lapp.assert (math.floor (v) > 0, 'must be at least 1 minute!')
                 end)
-lapp.add_type  ('int', 'number',
+lapp.add_type  ('int', tonumber,
                 function (v)
                   lapp.assert (math.floor (v) > 0, 'int must be at > 0!')
                 end)
@@ -49,6 +49,7 @@ options:
               bitfinex:
                 usd, btc, eth, etc, zec, xmr, ltc, dsh
 ]]
+
 local check_currency = function (args)
   local exchange =
   {
