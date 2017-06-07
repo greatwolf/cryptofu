@@ -133,16 +133,19 @@ local cancel_openoffers = function (context)
     :foreach (function (v) log (v) end)
 end
 
+local satoshi = 1E8
 local place_newoffers = function (context)
   if #context.openoffers > 0 then return end
 
   local newoffer_count = 5
   local seen = {}
   local lendingbook = context.lendingbook
+  local balance     = math.floor (context.balance * satoshi)
+  local chunk       = math.floor (lend_quantity * satoshi)
 
   local r =
     seq (lendingbook)
-    :filter (function () return lend_quantity <= context.balance end)
+    :filter (function () return chunk <= balance end)
     :last ()
     :map (groupadjacent (ratepip, lendingbook[1]))
     :filter (function (v) return v.amount > wallfactor end)
@@ -158,13 +161,13 @@ local place_newoffers = function (context)
     :map (function (v)
             sleep (250)
             local period   = scale_duration (v.rate, context.sma, 0.015)
-            local quantity =  lend_quantity + context.balance % lend_quantity
+            local quantity = (chunk + balance % chunk) / satoshi
             log (("placing offer: %.8f @%.6f%%"):format (quantity, v.rate))
             local offerstat, errmsg = lendapi:placeoffer (crypto, v.rate, quantity, period)
             if errmsg then return errmsg end
 
             assert (offerstat.success == 1)
-            context.balance = context.balance - quantity
+            balance = balance - quantity * satoshi
 
             local status = "%s #%s"
             return status:format (offerstat.message,
