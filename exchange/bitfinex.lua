@@ -21,6 +21,10 @@ local function bitfinex_authquery (self, cmd, parm)
 
   local res, c = apiquery.postrequest (url, cmd, self.headers)
   if c ~= 200 then
+    if res.message == "Nonce is too small." then
+      nonce (-1)
+      return bitfinex_authquery (self, cmd, parm)
+    end
     return nil, res.message
   end
 
