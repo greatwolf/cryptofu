@@ -173,19 +173,7 @@ local place_newoffers = function (context)
             return status:format (offerstat.message,
                                   offerstat.orderid)
           end)
-    :map (function (v)
-            log (v)
-            return v
-          end)
-    :copy ()
-
-  -- only log this if there's at least one new order placed
-  seq (r)
-  :take (1)
-  :foreach (function ()
-              local msg = "%d-min SMA rate: %.6f%%"
-              loginfo (msg:format (args.sma_bars, context.sma))
-            end)
+    :foreach (function (v) log (v) end)
 end
 
 local function total_activeoffers (activeoffers)
@@ -249,6 +237,7 @@ local show_lent         = log_changes (crypto .. " lent: %.8f")
 local show_yield        = log_changes (crypto .. " effective yield: %.6f%%")
 local show_activecount  = log_changes "%d active loans"
 local show_opencount    = log_changes "%d open offers"
+local show_sma          = log_changes (args.sma_bars .. "-min SMA rate: %.6f%%")
 
 local show_lendinginfo = function (context)
   show_activecount (#context.activeoffers)
@@ -256,6 +245,7 @@ local show_lendinginfo = function (context)
   show_balance (context.balance)
   show_lent (context.lent)
   show_yield (context.yield)
+  show_sma (context.sma)
 end
 
 local make_sma = function (timeframe, length)
