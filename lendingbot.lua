@@ -22,7 +22,7 @@ lapp.add_type  ('minutes', tonumber,
                 end)
 lapp.add_type  ('int', tonumber,
                 function (v)
-                  lapp.assert (math.floor (v) > 0, 'int must be at > 0!')
+                  lapp.assert (math.floor (v) > 1, 'int must be at > 1!')
                 end)
 local args = lapp
 [[
