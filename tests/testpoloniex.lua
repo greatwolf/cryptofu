@@ -170,7 +170,7 @@ utest.group "poloniex_lendingapi"
   test_placeoffer = function ()
     local r, errmsg = lendapi:placeoffer ("BTC", 2.0, 0.001, 3, false)
 
-    assert (errmsg == "Amount must be at least 0.01." or (r and r.orderid), errmsg)
+    assert (errmsg:match "Amount must be at least 0.01" or (r and r.orderid), errmsg)
     if r then
       test_offers:push (assert (r.orderid))
     end
@@ -179,7 +179,7 @@ utest.group "poloniex_lendingapi"
   test_placeoffermixcase = function ()
     local r, errmsg = lendapi:placeoffer ("BtC", 2.0, 0.001, 3, false)
 
-    assert (errmsg == "Amount must be at least 0.01." or (r and r.orderid), errmsg)
+    assert (errmsg:match "Amount must be at least 0.01" or (r and r.orderid), errmsg)
     if r then
       test_offers:push (assert (r.orderid))
     end
