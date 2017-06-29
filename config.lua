@@ -5,25 +5,37 @@ modules =
 
 apikeys =
 {
-  poloniex = 
+  poloniex =
   {
     key = "",
     secret = "",
   },
 
-  bittrex = 
+  bittrex =
   {
     key = "",
     secret = "",
   },
 
-  bitfinex = 
+  bitfinex =
   {
     key = "",
     secret = "",
   },
 
-  kraken = 
+  kraken =
+  {
+    key = "",
+    secret = "",
+  },
+
+  btce =
+  {
+    key = "",
+    secret = "",
+  },
+
+  okcoin =
   {
     key = "",
     secret = "",

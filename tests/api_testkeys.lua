@@ -1,13 +1,37 @@
 -- api authentication info used for exchange unit tests
 return 
 {
-  poloniex = 
+  poloniex =
   {
     key = "",
-    secret = ""
+    secret = "",
   },
 
-  bittrex = 
+  bittrex =
+  {
+    key = "",
+    secret = "",
+  },
+
+  bitfinex =
+  {
+    key = "",
+    secret = "",
+  },
+
+  kraken =
+  {
+    key = "",
+    secret = "",
+  },
+
+  btce =
+  {
+    key = "",
+    secret = "",
+  },
+
+  okcoin =
   {
     key = "",
     secret = "",
