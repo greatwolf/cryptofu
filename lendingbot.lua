@@ -47,13 +47,13 @@ options:
               poloniex:
                 btc, bts, clam, doge, dash, ltc, maid, str, xmr, xrp, eth, fct
               bitfinex:
-                usd, btc, eth, etc, zec, xmr, ltc, dsh
+                usd, btc, bch, eth, etc, eos, zec, xmr, ltc, dsh
 ]]
 
 local check_currency = function (args)
   local exchange =
   {
-    bitfinex = set {"usd", "btc", "eth", "etc", "zec", "xmr", "ltc", "dsh"},
+    bitfinex = set {"usd", "btc", "bch", "eth", "etc", "eos", "zec", "xmr", "ltc", "dsh"},
     poloniex = set {"btc", "bts", "clam", "doge", "dash", "ltc",
                     "maid", "str", "xmr", "xrp", "eth", "fct"}
   }
