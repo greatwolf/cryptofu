@@ -25,7 +25,7 @@ local function bitfinex_authquery (self, cmd, parm)
       nonce (-1)
       return bitfinex_authquery (self, cmd, parm)
     end
-    return nil, res.message
+    return nil, res.message or res.error
   end
 
   return res
@@ -36,7 +36,7 @@ local bitfinex_publicquery = function (self, cmd, parm)
 
   local res, c = apiquery.getrequest (url, cmd .. urlencode_parm (parm))
   if c ~= 200 then
-    return nil, res.message
+    return nil, res.message or res.error
   end
   return res
 end
