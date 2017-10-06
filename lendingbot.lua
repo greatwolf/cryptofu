@@ -37,9 +37,9 @@ options:
   --offerttl (seconds default 180)
                             Seconds to keep offers alive for before the bot
                             cancels and repositions.
-  --sma-bars (minutes default 1)
+  --sma-bars (minutes default 10)
                             Timeframe of each bar to use for simple moving average.
-  --sma-length (int default 10)
+  --sma-length (int default 52)
                             Number of bars to use for simple moving average.
 
   <exchange>  (bitfinex|poloniex)
