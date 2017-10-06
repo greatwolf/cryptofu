@@ -327,7 +327,7 @@ local function bot ()
       lendingcontext.lendingbook    = assert (publicapi:lendingbook (crypto))
       lendingcontext.openoffers     = assert (lendapi:openoffers (crypto))
       lendingcontext.activeoffers   = assert (lendapi:activeoffers (crypto))
-      lendingcontext.balance        = assert (lendapi:balance ())[crypto]
+      lendingcontext.balance        = assert (lendapi:balance ())[crypto] or 0
 
       sma.update (lendingcontext.lendingbook[1].rate)
       lendingcontext.sma    = sma.compute ()
