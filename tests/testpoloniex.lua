@@ -139,7 +139,7 @@ utest.group "poloniex_tradingapi"
   end,
 
   test_sell = function ()
-    local r, errmsg = tradeapi:sell ("USDT", "BTC", 40000, 0.000001)
+    local r, errmsg = tradeapi:sell ("USDT", "BTC", 40000, 0.0001)
 
     assert (errmsg == "Not enough BTC." or (r and r.orderid), errmsg)
     if r then 
